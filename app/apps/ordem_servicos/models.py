@@ -1,6 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import User
-from clientes.models import Cliente
+from apps.clientes.models import Cliente
 from django.utils import timezone
 import datetime
 import os
