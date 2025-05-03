@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from .models import Ticket, Atendimento, MensagemAtendimento
-from clientes.serializers import ClienteSerializer
-from clientes.models import Cliente
+from apps.clientes.serializers import ClienteSerializer
+from apps.clientes.models import Cliente
 class MensagemAtendimentoSerializer(serializers.ModelSerializer):
     class Meta:
         model = MensagemAtendimento

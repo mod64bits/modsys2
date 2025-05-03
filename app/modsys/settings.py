@@ -15,7 +15,8 @@ from pathlib import Path
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 DATA_DIR = BASE_DIR.parent / 'data' / 'web'
-
+print(f"debug {DATA_DIR}")
+print(f"debug {BASE_DIR}")
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
@@ -25,12 +26,12 @@ SECRET_KEY = os.getenv('SECRET_KEY', 'change-me')
 #SECRET_KEY = os.environ.get("SECRET_KEY")
 
 # SECURITY WARNING: don't run with debug turned on in production!
-#DEBUG = True
-DEBUG = bool(int(os.getenv('DEBUG', 0)))
+DEBUG = True
+#DEBUG = bool(int(os.getenv('DEBUG', 1)))
 
 # ALLOWED_HOSTS = []
 ALLOWED_HOSTS = [
-    h.strip() for h in os.getenv('ALLOWED_HOSTS', '').split(',')
+    h.strip() for h in os.getenv('ALLOWED_HOSTS', '127.0.0.1').split(',')
     if h.strip()
 ]
 
@@ -132,6 +133,10 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
 STATIC_URL = 'static/'
+STATICFILES_DIRS = [
+    os.path.join(BASE_DIR, "static"),
+
+]
 STATIC_ROOT = DATA_DIR / 'static'
 
 MEDIA_URL = 'media/'
