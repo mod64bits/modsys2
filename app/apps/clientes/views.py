@@ -12,7 +12,7 @@ class ListaClientesView(ListView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['menu_open_cadastro'] = True
+        context['active_cadastro'] = True
         context['active_clientes'] = True
         return context
 
