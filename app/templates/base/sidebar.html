@@ -58,17 +58,18 @@
               </li>
             </ul>
           </li>
-          <li class="nav-item menu-open">
-            <a href="#" class="nav-link active">
+          <li class="nav-item {% if active_ordem %} menu-open {% endif %}">
+            <a href="#" class="nav-link {% if active_ordem %}active {% endif %}">
               <i class="nav-icon fas fa-tachometer-alt"></i>
               <p>
-                Chamados
+                Ordens / Tickets
                 <i class="right fas fa-angle-left"></i>
+
               </p>
             </a>
             <ul class="nav nav-treeview">
               <li class="nav-item">
-                <a href="#" class="nav-link active">
+                <a href="{% url 'ordens:ticket_lista' %}" class="nav-link {% if active_tickt_list %}active {% endif %}">
                   <i class="far fa-circle nav-icon"></i>
                   <p>Tickets</p>
                 </a>

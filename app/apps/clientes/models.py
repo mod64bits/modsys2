@@ -18,3 +18,16 @@ class Cliente(BaseModel):
 
     def __str__(self):
         return self.nome
+
+class Equipe(BaseModel):
+    CARGO_CHOICES = [
+        ('PROPRIETARIO', 'PROPRIETARIO'),
+        ('GERENTE', 'GERENTE'),
+        ('FUNCIONARIO', 'FUNCIONARIO'),
+    ]
+    nome = models.CharField(max_length=100)
+    cargo = models.CharField(max_length=30, choices=CARGO_CHOICES)
+    clientes = models.ManyToManyField(Cliente)
+
+    def __str__(self):
+        return f"{self.nome} - {self.cargo}"
