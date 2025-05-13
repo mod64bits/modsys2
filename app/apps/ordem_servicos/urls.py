@@ -5,5 +5,5 @@ app_name = 'ordens'
 urlpatterns = [
     path('', views.HomeOrdemDeServicosView.as_view(), name='ticket_home'),
     path('tikets/', views.TicketListView.as_view(), name='ticket_lista'),
-    path('tiket/novo/', views.NovoTicketView.as_view(), name='ticket_novo'),
+    path('tickets/novo/<uuid:cliente_id>/', views.NovoTicketView.as_view(), name='ticket_create'),
 ]

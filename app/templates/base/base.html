@@ -126,6 +126,7 @@ scratch. This page gets rid of all links and provides the needed markup only.
   <!-- /.content-wrapper -->
 
   <!-- Control Sidebar -->
+{% block control_sidebar %}
   <aside class="control-sidebar control-sidebar-dark">
     <!-- Control sidebar content goes here -->
     <div class="p-3">
@@ -133,6 +134,7 @@ scratch. This page gets rid of all links and provides the needed markup only.
       <p>Sidebar content</p>
     </div>
   </aside>
+{% endblock control_sidebar %}
   <!-- /.control-sidebar -->
 
   <!-- Main Footer -->
@@ -170,6 +172,7 @@ scratch. This page gets rid of all links and provides the needed markup only.
     <script src="{% static 'plugins/bs-stepper/js/bs-stepper.min.js' %}"></script>
     <script src="{% static 'plugins/select2/js/select2.full.min.js' %}"></script>
 <script src="{% static 'plugins/bootstrap/js/bootstrap.bundle.min.js' %}"></script>
+
 <!-- AdminLTE App -->
 <script src="{% static 'dist/js/adminlte.min.js' %}"></script>
 {% block scripts %}

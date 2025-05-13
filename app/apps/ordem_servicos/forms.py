@@ -1,3 +1,5 @@
+from django import forms
+
 from .models import Ticket
 import django_filters
 from bootstrap_modal_forms.forms import BSModalModelForm
@@ -5,9 +7,6 @@ from apps.clientes.models import Cliente, Equipe
 
 
 class AbrirTicketForm(BSModalModelForm):
-    class Meta:
-        model = Ticket
-        fields = ['cliente', 'solicitante', 'descricao']
 
     def __init__(self, *args, **kwargs):
         # Pegamos o cliente para filtrar os membros da equipe
@@ -20,6 +19,15 @@ class AbrirTicketForm(BSModalModelForm):
         else:
             # Por padrão, nenhum membro da equipe estará disponível
             self.fields['solicitante'].queryset = Equipe.objects.none()
+
+    class Meta:
+        model = Ticket
+        fields = ['cliente', 'solicitante', 'descricao']
+        widgets = {
+            'cliente': forms.Select(attrs={'class': 'form-control'}),
+            'solicitante': forms.Select(attrs={'class': 'form-control'}),
+            'descricao': forms.Textarea(attrs={'class': 'form-control', 'rows': 4}),
+        }
 
 
 

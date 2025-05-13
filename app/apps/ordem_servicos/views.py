@@ -42,12 +42,17 @@ class TicketListView(ListView):
 
     def get_queryset(self, *args, **kwargs):
         qs = super(TicketListView, self).get_queryset(*args, **kwargs)
-        qs = qs.filter(status='aberto').order_by('-created_at')
+        qs = qs.filter(status='aberto').order_by('-created')
         return qs
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['active_ordem'] = True
         context['active_tickt_list'] = True
+        return context
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['clientes'] = Cliente.objects.all()
         return context
 

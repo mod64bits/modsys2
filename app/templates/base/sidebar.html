@@ -45,13 +45,17 @@
             </a>
             <ul class="nav nav-treeview">
               <li class="nav-item">
-                <a href="{% url 'clientes:lista_cliente' %}" class="nav-link {% if active_clientes%} active{% endif %}">
+
+
+             {% if user.is_superuser %}
+                <a href="{% url 'admin:clientes_cliente_changelist' %}" class="nav-link">
                   <i class="far fa-circle nav-icon"></i>
                   <p>Clientes</p>
                 </a>
+                    {% endif %}
               </li>
               <li class="nav-item">
-                <a href="{% url 'clientes:lista_cliente' %}" class="nav-link">
+                <a href="#" class="nav-link">
                   <i class="far fa-circle nav-icon"></i>
                   <p>Inactive Page</p>
                 </a>

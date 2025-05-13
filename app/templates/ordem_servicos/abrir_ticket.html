@@ -1,0 +1,51 @@
+{% load widget_tweaks %}
+
+<form method="post" action="{% url 'sua_url_name' %}" id="abrirTicketForm">
+    {% csrf_token %}
+
+    <!-- Exibir erros não relacionados a campos específicos -->
+    {% if form.non_field_errors %}
+        <div class="alert alert-danger">
+            {{ form.non_field_errors }}
+        </div>
+    {% endif %}
+
+    <!-- Campo Cliente -->
+    <div class="form-group">
+        <label for="{{ form.cliente.id_for_label }}">Cliente</label>
+        {% render_field form.cliente class="form-control" %}
+        {% if form.cliente.errors %}
+            <div class="invalid-feedback d-block">
+                {{ form.cliente.errors }}
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- Campo Solicitante -->
+    <div class="form-group">
+        <label for="{{ form.solicitante.id_for_label }}">Solicitante</label>
+        {% render_field form.solicitante class="form-control" %}
+        {% if form.solicitante.errors %}
+            <div class="invalid-feedback d-block">
+                {{ form.solicitante.errors }}
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- Campo Descrição -->
+    <div class="form-group">
+        <label for="{{ form.descricao.id_for_label }}">Descrição</label>
+        {% render_field form.descricao class="form-control" rows="4" %}
+        {% if form.descricao.errors %}
+            <div class="invalid-feedback d-block">
+                {{ form.descricao.errors }}
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- Botões do Modal -->
+    <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+        <button type="submit" class="btn btn-primary">Abrir Ticket</button>
+    </div>
+</form>
