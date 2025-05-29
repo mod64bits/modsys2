@@ -11,7 +11,7 @@ from ..clientes.models import Cliente
 class HomeOrdemDeServicosView(TemplateView):
     template_name = "ordem_servicos/home.html"
 
-class NovoTicketView(CreateView):
+class NovoTicketView(BSModalCreateView):
     template_name = "ordem_servicos/novo_ticket.html"
     form_class = AbrirTicketForm
     success_message = 'Success: Ticket aberto com sucesso!'

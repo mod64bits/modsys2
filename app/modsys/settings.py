@@ -31,7 +31,7 @@ DEBUG = True
 
 # ALLOWED_HOSTS = []
 ALLOWED_HOSTS = [
-    h.strip() for h in os.getenv('ALLOWED_HOSTS', '127.0.0.1').split(',')
+    h.strip() for h in os.getenv('ALLOWED_HOSTS', '172.16.20.7').split(',')
     if h.strip()
 ]
 
@@ -92,10 +92,10 @@ WSGI_APPLICATION = 'modsys.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': os.getenv('DB_ENGINE', 'django.db.backends.postgresql'),
-        'NAME': os.getenv('POSTGRES_DB', 'modsys_dois'),
+        'NAME': os.getenv('POSTGRES_DB', 'mod_sys_dev'),
         'USER': os.getenv('POSTGRES_USER', 'postgres'),
         'PASSWORD': os.getenv('POSTGRES_PASSWORD', 'mod64'),
-        'HOST': os.getenv('POSTGRES_HOST', '172.16.20.4'),
+        'HOST': os.getenv('POSTGRES_HOST', '172.16.20.7'),
         'PORT': os.getenv('POSTGRES_PORT', '5432'),
     }
 }

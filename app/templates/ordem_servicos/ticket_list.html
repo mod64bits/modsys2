@@ -6,6 +6,17 @@
 {% block content %}
 
     <div class="content">
+      <div class="modal fade" role="dialog" id="modal-default">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content"></div>
+        </div>
+    </div>
+
+    <div class="modal fade"  role="dialog" id="modal">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content"></div>
+        </div>
+    </div>
       <div class="container-fluid">
         <div class="row">
           <div class="col-lg-6">
@@ -68,17 +79,11 @@
                   {% for ticket in object_list %}
                   <tr>
                     <td>
-                      <img src="dist/img/default-150x150.png" alt="Product 1" class="img-circle img-size-32 mr-2">
-                      Some Product
+                      {{ ticket.cliente.nome }}
                     </td>
-                    <td>$13 USD</td>
-                    <td>
-                      <small class="text-success mr-1">
-                        <i class="fas fa-arrow-up"></i>
-                        12%
-                      </small>
-                      12,000 Sold
-                    </td>
+                    <td>{{ ticket.solicitante.nome }}</td>
+                    <td>{{ ticket.status }}</td>
+                    <td>{{ ticket.created }}</td>
                     <td>
                       <a href="#" class="text-muted">
                         <i class="fas fa-search"></i>
@@ -118,14 +123,22 @@
                   <tr>
                     <th>Cliente</th>
                     <th>Documento</th>
+                    <th>Ação</th>
                   </tr>
                   </thead>
                   <tbody>
 
                   {% for cliente in clientes %}
                   <tr>
-                       <td><a href="{% url 'ordens:ticket_create' cliente.id %}">{{ cliente.nome }}</a></td>
+                       <td>{{ cliente.nome }}</td>
                     <td>{{ cliente.documento|default:"Sem Documento Cadastrado" }}</td>
+                    <td>
+                      <button class="abrir-ticket btn btn-info btn-sm" data-form-url="{% url 'ordens:ticket_create' cliente.pk %}">
+                        <i class="fas fa-pencil-alt">
+                        </i>
+                        Abrir Ticket
+                    </button>
+                    </td>
                   </tr>
                   {% endfor %}
                   </tbody>
@@ -133,6 +146,7 @@
                   <tr>
                      <th>Cliente</th>
                     <th>Documento</th>
+                    <th>Ação</th>
                   </tr>
                   </tfoot>
                 </table>
@@ -230,4 +244,28 @@
             })
         });
     </script>
+
+<script src="{% static 'js/jquery.bootstrap.modal.forms.js' %}"></script>
+<!-- You can alternatively load the minified version -->
+<script src="{% static 'js/jquery.bootstrap.modal.forms.min.js' %}"></script>
+
+<script type="text/javascript">
+  $(document).ready(function() {
+      
+      function updateClienteModalForm() {
+          $(".abrir-ticket").each(function () {
+              $(this).modalForm({
+                  formURL: $(this).data("form-url"),
+                  asyncUpdate: false,
+                  modalID: "#modal-default",
+              });
+          });
+      }
+
+      updateClienteModalForm();
+
+  
+  });
+</script>
+
 {% endblock scripts %}

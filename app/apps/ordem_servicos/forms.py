@@ -24,7 +24,7 @@ class AbrirTicketForm(BSModalModelForm):
         model = Ticket
         fields = ['cliente', 'solicitante', 'descricao']
         widgets = {
-            'cliente': forms.Select(attrs={'class': 'form-control'}),
+            'cliente': forms.HiddenInput(),
             'solicitante': forms.Select(attrs={'class': 'form-control'}),
             'descricao': forms.Textarea(attrs={'class': 'form-control', 'rows': 4}),
         }
