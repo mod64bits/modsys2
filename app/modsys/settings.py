@@ -31,7 +31,7 @@ DEBUG = True
 
 # ALLOWED_HOSTS = []
 ALLOWED_HOSTS = [
-    h.strip() for h in os.getenv('ALLOWED_HOSTS', '172.16.20.7').split(',')
+    h.strip() for h in os.getenv('ALLOWED_HOSTS', '127.0.0.1').split(',')
     if h.strip()
 ]
 
@@ -48,10 +48,12 @@ INSTALLED_APPS = [
     # Libes
     'bootstrap_modal_forms',
     'widget_tweaks',
+    'crispy_forms',
     # APPS
     'apps.account',
     'apps.base',
-    'apps.ordem_servicos',
+    #'apps.ordem_servicos',
+    'apps.servicedesk',
     'apps.clientes',
 ]
 

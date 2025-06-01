@@ -18,10 +18,13 @@ from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import path, include
+from django.views.generic import RedirectView
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('ordens/', include('apps.ordem_servicos.urls')),
+     path('servicedesk/', include('apps.servicedesk.urls', namespace='servicedesk')),
+    # Redireciona a URL raiz '/' para a lista de tickets
+    path('', RedirectView.as_view(url='/servicedesk/tickets/', permanent=True)),
 
 ]
 

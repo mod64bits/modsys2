@@ -1,0 +1,35 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Mensagens do Atendimento {{ atendimento.protocolo }}</h2>
+    
+    <div class="mb-3">
+        <a href="{% url 'mensagem-atendimento-create' atendimento_id=atendimento.id %}" class="btn btn-primary">
+            Nova Mensagem
+        </a>
+    </div>
+
+    <div class="messages">
+        {% for mensagem in mensagens %}
+        <div class="card mb-3">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <h6 class="card-subtitle mb-2 text-muted">
+                        {{ mensagem.atendente.get_full_name|default:"Sistema" }} - {{ mensagem.created|date:"d/m/Y H:i" }}
+                    </h6>
+                </div>
+                <p class="card-text">{{ mensagem.mensagem }}</p>
+                {% if mensagem.arquivo %}
+                <a href="{{ mensagem.arquivo.url }}" class="btn btn-sm btn-secondary" target="_blank">
+                    Ver Anexo
+                </a>
+                {% endif %}
+            </div>
+        </div>
+        {% empty %}
+        <p>Nenhuma mensagem encontrada.</p>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %} 
