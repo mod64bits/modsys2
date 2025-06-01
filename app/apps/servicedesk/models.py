@@ -2,6 +2,8 @@
 from django.db import models
 from django.conf import settings
 from django.contrib.auth.models import User
+from django.db.models.signals import post_save
+from django.dispatch import receiver
 from django.utils import timezone
 
 class Ticket(models.Model):
@@ -90,3 +92,62 @@ class Comment(models.Model):
     created_date = models.DateTimeField(default=timezone.now)
     def __str__(self):
         return f"Comentário de {self.author} em {self.ticket.title}"
+
+@receiver(post_save, sender=WorkOrder)
+def work_order_post_save_receiver(sender, instance, created, **kwargs):
+    """
+    Quando uma WorkOrder é salva, verifica se seu status é 'CONCLUIDA' ou 'CANCELADA'.
+    Se for, verifica se todas as outras WorkOrders do mesmo Ticket também estão nesses status.
+    Se todas estiverem, o Ticket pai é atualizado para 'RESOLVIDO'.
+    """
+    work_order = instance
+    ticket = work_order.ticket
+
+    # Evita recursão se a atualização da work_order for desencadeada por uma atualização de Ticket
+    if hasattr(work_order, '_skip_signal_handler') and work_order._skip_signal_handler:
+        return
+
+    # Verifica apenas se o status da WorkOrder mudou para um estado final
+    # e se o ticket ainda não está em um estado final.
+    if work_order.status in ['CONCLUIDA', 'CANCELADA'] and ticket.status not in ['RESOLVIDO', 'FECHADO']:
+        # Verifica o status de todas as WorkOrders associadas ao Ticket
+        all_work_orders = ticket.work_orders.all()
+        all_closed_or_cancelled = True
+        if not all_work_orders.exists(): # Se não há OS, o ticket pode ser considerado resolvido (depende da regra)
+            all_closed_or_cancelled = True # Ou False, dependendo da regra de negócio
+        else:
+            for wo in all_work_orders:
+                if wo.status not in ['CONCLUIDA', 'CANCELADA']:
+                    all_closed_or_cancelled = False
+                    break
+
+        if all_closed_or_cancelled:
+            # Antes de salvar o ticket, defina um atributo para pular o signal handler do Ticket
+            ticket._skip_signal_handler = True
+            ticket.status = 'RESOLVIDO' # Ou 'FECHADO', dependendo da lógica de negócio
+            ticket.save(update_fields=['status'])
+            delattr(ticket, '_skip_signal_handler') # Remove o atributo após salvar
+
+
+# É importante registrar os signals. Em apps Django mais recentes,
+# a configuração em apps.py com AppConfig.ready() é a forma preferida.
+# No entanto, para este exemplo, a simples importação dos signals no models.py
+# ou em __init__.py do app geralmente funciona se o models.py for carregado.
+# Para garantir o carregamento, você pode importar os signals no método ready()
+# do arquivo servicedesk/apps.py:
+
+# servicedesk/apps.py
+# from django.apps import AppConfig
+# class ServicedeskConfig(AppConfig):
+#     default_auto_field = 'django.db.models.BigAutoField'
+#     name = 'servicedesk'
+#     def ready(self):
+#         import servicedesk.signals # ou import servicedesk.models se os receivers estiverem aqui
+#
+# E em servicedesk/__init__.py, adicione:
+# default_app_config = 'servicedesk.apps.ServicedeskConfig'
+#
+# Se você não fizer isso, os signals podem não ser conectados quando o Django iniciar.
+# Uma forma mais simples, mas menos "moderna", é garantir que este models.py
+# seja importado em algum momento, o que geralmente acontece.
+

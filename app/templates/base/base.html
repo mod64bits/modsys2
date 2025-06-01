@@ -104,26 +104,7 @@
               <p>Ordens de Serviço</p>
             </a>
           </li>
-          <!-- Exemplo de menu com subitens
-          <li class="nav-item menu-open">
-            <a href="#" class="nav-link active">
-              <i class="nav-icon fas fa-tachometer-alt"></i>
-              <p>
-                Dashboard
-                <i class="right fas fa-angle-left"></i>
-              </p>
-            </a>
-            <ul class="nav nav-treeview">
-              <li class="nav-item">
-                <a href="./index.html" class="nav-link active">
-                  <i class="far fa-circle nav-icon"></i>
-                  <p>Dashboard v1</p>
-                </a>
-              </li>
-            </ul>
-          </li>
-          -->
-        </ul>
+          </ul>
       </nav>
       </div>
     </aside>
@@ -196,32 +177,43 @@ $(document).ready(function() {
 
     // Captura cliques em botões/links que devem abrir modais AJAX
     $(document).on('click', '[data-toggle="ajax-modal"]', function(event) {
-        event.preventDefault();
-        var url = $(this).data('url');
-        var modalTarget = $($(this).data('target') || '#ajaxModal'); // Permite especificar o alvo ou usa o padrão
+        event.preventDefault(); // ESSENCIAL que seja a primeira coisa
 
-        showLoading();
+        var clickedElement = $(this);
 
-        $.ajax({
-            url: url,
-            type: 'GET',
-            success: function(response) {
-                modalTarget.find('.modal-content').html(response);
-                modalTarget.modal('show');
-                // Inicializar plugins JS (ex: select2, datepickers) se necessário após carregar o conteúdo
-                // if (typeof initializeModalPlugins === 'function') {
-                //     initializeModalPlugins(modalTarget);
-                // }
-            },
-            error: function(xhr, status, error) {
-                console.error("Erro ao carregar modal:", status, error);
-                alert('Ocorreu um erro ao carregar o conteúdo. Tente novamente.');
-            },
-            complete: function() {
-                hideLoading();
+        if (clickedElement && clickedElement.length && typeof clickedElement.prop === 'function') {
+            var url = clickedElement.data('url') || clickedElement.attr('href');
+
+            if (!url || url === '#') {
+                // console.error("URL inválida para o modal AJAX: ", url, "Elemento clicado:", clickedElement.prop('outerHTML'));
+                return; // Interrompe se a URL for inválida
             }
-        });
+
+            var modalTarget = $(clickedElement.data('target') || '#ajaxModal');
+            showLoading();
+
+            $.ajax({
+                url: url,
+                type: 'GET',
+                success: function(response) {
+                    modalTarget.find('.modal-content').html(response);
+                    modalTarget.modal('show');
+                },
+                error: function(xhr, status, error) {
+                    // console.error("Erro ao carregar modal:", status, error, xhr.responseText);
+                    alert('Ocorreu um erro ao carregar o conteúdo. Tente novamente.');
+                },
+                complete: function() {
+                    hideLoading();
+                }
+            });
+
+        } else {
+            // console.error("Elemento clicado para modal AJAX não é um objeto jQuery válido ou não possui o método .prop(). Elemento:", this);
+            return;
+        }
     });
+
 
     // Delegação para submissão de formulários dentro do modal AJAX
     $(document).on('submit', '#ajaxModal form, form.ajax-form', function(event) {
@@ -229,73 +221,69 @@ $(document).ready(function() {
         var form = $(this);
         var url = form.attr('action');
         var method = form.attr('method') || 'POST';
-        var formData = new FormData(form[0]); // Usar FormData para suportar arquivos
+        var formData = new FormData(form[0]);
         var modalTarget = form.closest('.modal');
 
+        modalTarget.find('.modal-body .alert-danger').remove();
         showLoading();
 
         $.ajax({
             url: url,
             type: method,
             data: formData,
-            processData: false, // Necessário para FormData
-            contentType: false, // Necessário para FormData
-            headers: {'X-Requested-With': 'XMLHttpRequest'}, // Identifica como AJAX para o Django
+            processData: false,
+            contentType: false,
+            headers: {'X-Requested-With': 'XMLHttpRequest'},
             success: function(response) {
                 if (response.success) {
                     modalTarget.modal('hide');
-                    // alert(response.message || 'Operação realizada com sucesso!'); // Substituir por notificação melhor
-                    // Exibe a mensagem de sucesso do Django (se houver) ou a mensagem da resposta JSON
                     if (response.message) {
-                         // Adiciona a mensagem ao corpo da página. Idealmente, use um sistema de notificações.
                         $('.content .container-fluid').prepend(
                             '<div class="alert alert-success alert-dismissible fade show" role="alert">' +
                             response.message +
                             '<button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button></div>'
                         );
                     }
-                    // Recarregar a lista de tickets ou atualizar a tabela dinamicamente
-                    // Exemplo simples: recarregar a página após um pequeno delay
                     setTimeout(function() {
                         location.reload();
-                    }, 500); // Ajuste o delay conforme necessário
+                    }, 500);
                 } else {
-                    // Se houver erros de formulário, exibi-los.
-                    // Esta parte precisa ser melhorada para mostrar os erros nos campos corretos.
                     if (response.errors) {
                         var error_html = '<div class="alert alert-danger">Por favor, corrija os erros abaixo:<ul>';
-                        var errors = JSON.parse(response.errors); // Se errors for JSON string
-                        for (var field in errors) {
-                            errors[field].forEach(function(error) {
-                                error_html += '<li>' + field + ': ' + error.message + '</li>';
+                        var errorsObject = typeof response.errors === 'string' ? JSON.parse(response.errors) : response.errors;
+                        for (var field in errorsObject) {
+                            errorsObject[field].forEach(function(error) {
+                                error_html += '<li>';
+                                if(field !== '__all__') {
+                                   error_html += field + ': ';
+                                }
+                                error_html += error.message + '</li>';
                             });
                         }
                         error_html += '</ul></div>';
-                        // Adiciona os erros no topo do formulário dentro do modal
                         modalTarget.find('.modal-body').prepend(error_html);
-                        // Ou, se houver um container específico para erros no form:
-                        // form.find('.form-errors-container').html(error_html).show();
                     } else {
-                        alert(response.message || 'Ocorreu um erro.');
+                        alert(response.message || 'Ocorreu um erro ao processar o formulário.');
                     }
                 }
             },
             error: function(xhr) {
                 var errorMsg = 'Ocorreu um erro ao processar sua solicitação.';
-                if (xhr.responseJSON && xhr.responseJSON.message) {
-                    errorMsg = xhr.responseJSON.message;
-                } else if (xhr.responseJSON && xhr.responseJSON.errors) {
-                    // Tratamento mais detalhado de erros de validação, se a view retornar assim
-                    var errors = JSON.parse(xhr.responseJSON.errors);
-                    errorMsg = "Erros de validação:\n";
-                     for (var field in errors) {
-                        errors[field].forEach(function(error) {
-                            errorMsg += field + ': ' + error.message + "\n";
-                        });
+                if (xhr.responseJSON) {
+                    if (xhr.responseJSON.message) {
+                        errorMsg = xhr.responseJSON.message;
+                    } else if (xhr.responseJSON.errors) {
+                        var errorsObject = typeof xhr.responseJSON.errors === 'string' ? JSON.parse(xhr.responseJSON.errors) : xhr.responseJSON.errors;
+                        errorMsg = "Erros de validação:\n";
+                         for (var field in errorsObject) {
+                            errorsObject[field].forEach(function(error) {
+                               errorMsg += field + ': ' + error.message + "\n";
+                            });
+                        }
                     }
                 }
                 alert(errorMsg);
-                console.error("Erro ao submeter formulário:", xhr.responseText);
+                // console.error("Erro ao submeter formulário:", xhr.responseText);
             },
             complete: function() {
                 hideLoading();
@@ -303,9 +291,9 @@ $(document).ready(function() {
         });
     });
 
-    // Limpar conteúdo do modal quando ele é fechado para evitar que dados antigos apareçam
     $('#ajaxModal').on('hidden.bs.modal', function () {
         $(this).find('.modal-content').html('');
+        $(this).find('.modal-body .alert-danger').remove();
     });
 
 });
@@ -314,3 +302,4 @@ $(document).ready(function() {
 {% block extrajs %}{% endblock %}
 </body>
 </html>
+```

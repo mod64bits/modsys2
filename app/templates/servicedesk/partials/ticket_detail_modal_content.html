@@ -49,21 +49,60 @@
         {% endif %}
     </dl>
 
+    <hr>
+    <h5>Ordens de Serviço Relacionadas</h5>
     {% if work_orders %}
-        <hr>
-        <h5>Ordens de Serviço Relacionadas</h5>
         {% for wo in work_orders %}
-            <div class="card card-sm">
-                <div class="card-body">
-                    <p><strong>OS #{{ wo.id }}</strong> - Status: {{ wo.get_status_display }}</p>
-                    <p>{{ wo.description|truncatechars:100 }}</p>
-                    <p><small>Técnico: {{ wo.assigned_technician.username|default:"N/A" }} | Agendada para: {{ wo.scheduled_date|date:"d/m/Y H:i"|default:"Não agendada" }}</small></p>
+            <div class="card card-sm mb-2">
+                <div class="card-body p-2">
+                    <p class="mb-1">
+                        <strong>
+                             <a href="#"
+                                data-dismiss="modal"
+                                data-toggle="ajax-modal"
+                                data-target="#ajaxModal"
+                                data-url="{% url 'servicedesk:work_order_detail_modal' wo.pk %}">
+                                OS #{{ wo.id }}
+                            </a>
+                        </strong> - Status: {{ wo.get_status_display }}
+                    </p>
+                    <p class="mb-1 small">{{ wo.description|truncatechars:100 }}</p>
+                    <p class="mb-0 small">
+                        <small>Técnico: {{ wo.assigned_technician.username|default:"N/A" }} | Agendada: {{ wo.scheduled_date|date:"d/m/y H:i"|default:"-" }}</small>
+                         <span class="float-right">
+                            <button type="button" class="btn btn-xs btn-outline-warning py-0 px-1"
+                                    data-dismiss="modal"
+                                    data-toggle="ajax-modal"
+                                    data-target="#ajaxModal"
+                                    data-url="{% url 'servicedesk:work_order_update_modal' wo.pk %}"
+                                    title="Editar OS">
+                                <i class="fas fa-edit fa-xs"></i>
+                            </button>
+                            <button type="button" class="btn btn-xs btn-outline-danger py-0 px-1"
+                                    data-dismiss="modal"
+                                    data-toggle="ajax-modal"
+                                    data-target="#ajaxModal"
+                                    data-url="{% url 'servicedesk:work_order_delete_modal' wo.pk %}"
+                                    title="Excluir OS">
+                                <i class="fas fa-trash fa-xs"></i>
+                            </button>
+                        </span>
+                    </p>
                 </div>
             </div>
         {% empty %}
             <p>Nenhuma ordem de serviço associada a este ticket.</p>
         {% endfor %}
+    {% else %}
+        <p>Nenhuma ordem de serviço associada a este ticket.</p>
     {% endif %}
+    <button type="button" class="btn btn-sm btn-success mt-2"
+        data-toggle="ajax-modal"
+        data-target="#ajaxModal"
+        data-url="{% url 'servicedesk:work_order_create_modal' %}?ticket_id={{ ticket.pk }}">
+    <i class="fas fa-plus"></i> Nova OS para este Ticket
+</button>
+
 
     {% if comments %}
         <hr>
@@ -81,7 +120,7 @@
         {% empty %}
             <p>Nenhum comentário neste ticket.</p>
         {% endfor %}
-        {% endif %}
+    {% endif %}
 
 </div>
 <div class="modal-footer">
