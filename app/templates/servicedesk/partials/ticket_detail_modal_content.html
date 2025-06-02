@@ -12,6 +12,21 @@
         <dt class="col-sm-4">Título:</dt>
         <dd class="col-sm-8">{{ ticket.title }}</dd>
 
+        <dt class="col-sm-4">Cliente:</dt>
+        <dd class="col-sm-8">
+            {% if ticket.customer %}
+                <a href="#"
+                   data-dismiss="modal"
+                   data-toggle="ajax-modal"
+                   data-target="#ajaxModal"
+                   data-url="{% url 'customers:customer_detail_modal' ticket.customer.pk %}">
+                    {{ ticket.customer.nome }}
+                </a>
+            {% else %}
+                <span class="text-muted">Nenhum cliente associado</span>
+            {% endif %}
+        </dd>
+
         <dt class="col-sm-4">Descrição:</dt>
         <dd class="col-sm-8" style="white-space: pre-wrap;">{{ ticket.description }}</dd>
 
@@ -32,9 +47,8 @@
 
         <dt class="col-sm-4">Última Atualização:</dt>
         <dd class="col-sm-8">{{ ticket.updated_at|date:"d/m/Y H:i:s" }}</dd>
-        
-        {% if ticket.category %}
-        <dt class="col-sm-4">Categoria:</dt>
+
+        {% if ticket.category %} <dt class="col-sm-4">Categoria:</dt>
         <dd class="col-sm-8">{{ ticket.category.name|default:"N/A" }}</dd>
         {% endif %}
 
@@ -70,6 +84,7 @@
                     <p class="mb-0 small">
                         <small>Técnico: {{ wo.assigned_technician.username|default:"N/A" }} | Agendada: {{ wo.scheduled_date|date:"d/m/y H:i"|default:"-" }}</small>
                          <span class="float-right">
+                            {% if wo.status not in "CONCLUIDA,CANCELADA" %}
                             <button type="button" class="btn btn-xs btn-outline-warning py-0 px-1"
                                     data-dismiss="modal"
                                     data-toggle="ajax-modal"
@@ -78,7 +93,8 @@
                                     title="Editar OS">
                                 <i class="fas fa-edit fa-xs"></i>
                             </button>
-                            <button type="button" class="btn btn-xs btn-outline-danger py-0 px-1"
+                            {% endif %}
+                            {% if wo.status not in "CONCLUIDA,CANCELADA" %} <button type="button" class="btn btn-xs btn-outline-danger py-0 px-1"
                                     data-dismiss="modal"
                                     data-toggle="ajax-modal"
                                     data-target="#ajaxModal"
@@ -86,6 +102,7 @@
                                     title="Excluir OS">
                                 <i class="fas fa-trash fa-xs"></i>
                             </button>
+                            {% endif %}
                         </span>
                     </p>
                 </div>
@@ -96,40 +113,24 @@
     {% else %}
         <p>Nenhuma ordem de serviço associada a este ticket.</p>
     {% endif %}
+    {% if ticket.status not in "FECHADO,RESOLVIDO" %}
     <button type="button" class="btn btn-sm btn-success mt-2"
-        data-toggle="ajax-modal"
-        data-target="#ajaxModal"
-        data-url="{% url 'servicedesk:work_order_create_modal' %}?ticket_id={{ ticket.pk }}">
-    <i class="fas fa-plus"></i> Nova OS para este Ticket
-</button>
-
-
-    {% if comments %}
-        <hr>
-        <h5>Comentários</h5>
-        {% for comment in comments %}
-            <div class="post">
-                <div class="user-block">
-                    <span class="username">
-                        <a href="#">{{ comment.author.username }}</a>
-                    </span>
-                    <span class="description">Comentou em - {{ comment.created_date|date:"d/m/Y H:i" }}</span>
-                </div>
-                <p>{{ comment.text|linebreaksbr }}</p>
-            </div>
-        {% empty %}
-            <p>Nenhum comentário neste ticket.</p>
-        {% endfor %}
+            data-dismiss="modal" data-toggle="ajax-modal"
+            data-target="#ajaxModal"
+            data-url="{% url 'servicedesk:work_order_create_modal' %}?ticket_id={{ ticket.pk }}">
+        <i class="fas fa-plus"></i> Nova OS para este Ticket
+    </button>
     {% endif %}
 
 </div>
 <div class="modal-footer">
     <button type="button" class="btn btn-secondary" data-dismiss="modal">Fechar</button>
-    <button type="button" class="btn btn-warning" 
-            data-dismiss="modal"
-            data-toggle="ajax-modal" 
+    {% if ticket.status not in "FECHADO,RESOLVIDO" %}
+    <button type="button" class="btn btn-warning"
+            data-dismiss="modal" data-toggle="ajax-modal"
             data-target="#ajaxModal"
             data-url="{% url 'servicedesk:ticket_update_modal' ticket.pk %}">
         <i class="fas fa-edit"></i> Editar Ticket
     </button>
+    {% endif %}
 </div>

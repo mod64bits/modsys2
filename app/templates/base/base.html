@@ -11,7 +11,6 @@
   <link rel="stylesheet" href="{% static 'adminlte/dist/css/adminlte.min.css' %}">
   {% block extrastyles %}{% endblock %}
   <style>
-    /* Ajustes para o modal de loading */
     .loading-modal-overlay {
         position: fixed;
         top: 0;
@@ -19,7 +18,7 @@
         width: 100%;
         height: 100%;
         background-color: rgba(0, 0, 0, 0.5);
-        z-index: 10000; /* Acima de outros modais */
+        z-index: 10000;
         display: flex;
         justify-content: center;
         align-items: center;
@@ -27,6 +26,9 @@
     .loading-modal-spinner i {
         font-size: 3rem;
         color: white;
+    }
+    .nav-tabs .nav-link.active {
+        border-bottom: 2px solid #007bff; /* Cor da borda da aba ativa */
     }
   </style>
 </head>
@@ -93,13 +95,19 @@
       <nav class="mt-2">
         <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu" data-accordion="false">
           <li class="nav-item">
-            <a href="{% url 'servicedesk:ticket_list' %}" class="nav-link {% if request.resolver_match.url_name == 'ticket_list' %}active{% endif %}">
+            <a href="{% url 'customers:customer_list' %}" class="nav-link {% if request.resolver_match.app_name == 'customers' %}active{% endif %}">
+              <i class="nav-icon fas fa-users"></i>
+              <p>Clientes</p>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a href="{% url 'servicedesk:ticket_list' %}" class="nav-link {% if request.resolver_match.url_name == 'ticket_list' or request.resolver_match.app_name == 'servicedesk' and 'ticket' in request.resolver_match.url_name %}active{% endif %}">
               <i class="nav-icon fas fa-ticket-alt"></i>
               <p>Tickets</p>
             </a>
           </li>
           <li class="nav-item">
-            <a href="{% url 'servicedesk:work_order_list' %}" class="nav-link {% if request.resolver_match.url_name == 'work_order_list' %}active{% endif %}">
+            <a href="{% url 'servicedesk:work_order_list' %}" class="nav-link {% if request.resolver_match.url_name == 'work_order_list' or request.resolver_match.app_name == 'servicedesk' and 'work_order' in request.resolver_match.url_name %}active{% endif %}">
               <i class="nav-icon fas fa-tools"></i>
               <p>Ordens de Serviço</p>
             </a>
@@ -165,33 +173,26 @@
 
 <script>
 $(document).ready(function() {
-    // Função para mostrar o spinner de loading
     function showLoading() {
         $('#loadingOverlay').fadeIn(100);
     }
 
-    // Função para esconder o spinner de loading
     function hideLoading() {
         $('#loadingOverlay').fadeOut(100);
     }
 
-    // Captura cliques em botões/links que devem abrir modais AJAX
     $(document).on('click', '[data-toggle="ajax-modal"]', function(event) {
-        event.preventDefault(); // ESSENCIAL que seja a primeira coisa
-
+        event.preventDefault();
         var clickedElement = $(this);
 
         if (clickedElement && clickedElement.length && typeof clickedElement.prop === 'function') {
             var url = clickedElement.data('url') || clickedElement.attr('href');
-
             if (!url || url === '#') {
-                // console.error("URL inválida para o modal AJAX: ", url, "Elemento clicado:", clickedElement.prop('outerHTML'));
-                return; // Interrompe se a URL for inválida
+                console.error("URL inválida para o modal AJAX: ", url);
+                return;
             }
-
             var modalTarget = $(clickedElement.data('target') || '#ajaxModal');
             showLoading();
-
             $.ajax({
                 url: url,
                 type: 'GET',
@@ -200,23 +201,18 @@ $(document).ready(function() {
                     modalTarget.modal('show');
                 },
                 error: function(xhr, status, error) {
-                    // console.error("Erro ao carregar modal:", status, error, xhr.responseText);
                     alert('Ocorreu um erro ao carregar o conteúdo. Tente novamente.');
                 },
                 complete: function() {
                     hideLoading();
                 }
             });
-
         } else {
-            // console.error("Elemento clicado para modal AJAX não é um objeto jQuery válido ou não possui o método .prop(). Elemento:", this);
             return;
         }
     });
 
-
-    // Delegação para submissão de formulários dentro do modal AJAX
-    $(document).on('submit', '#ajaxModal form, form.ajax-form', function(event) {
+    $(document).on('submit', '#ajaxModal form.ajax-form', function(event) { // Mais específico para forms com a classe .ajax-form dentro do modal
         event.preventDefault();
         var form = $(this);
         var url = form.attr('action');
@@ -244,8 +240,28 @@ $(document).ready(function() {
                             '<button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button></div>'
                         );
                     }
+                    // Adicionado para atualizar o select de clientes em outros formulários, se existir
+                    if (response.customer_id && response.customer_name) {
+                        $('select[name="customer"]').each(function() {
+                            var $select = $(this);
+                            if (!$select.find('option[value="' + response.customer_id + '"]').length) {
+                                $select.append($('<option>', {
+                                    value: response.customer_id,
+                                    text: response.customer_name
+                                }));
+                            }
+                            // Opcional: selecionar o cliente recém-criado
+                            // $select.val(response.customer_id).trigger('change');
+                        });
+                    }
                     setTimeout(function() {
-                        location.reload();
+                        // Tenta recarregar apenas a lista principal se possível, senão a página toda
+                        if ($('#customer-list-table').length) { // Exemplo, se a tabela de clientes tiver um ID
+                             // Implementar recarregamento parcial da tabela aqui
+                             location.reload(); // Fallback por enquanto
+                        } else {
+                             location.reload();
+                        }
                     }, 500);
                 } else {
                     if (response.errors) {
@@ -283,7 +299,6 @@ $(document).ready(function() {
                     }
                 }
                 alert(errorMsg);
-                // console.error("Erro ao submeter formulário:", xhr.responseText);
             },
             complete: function() {
                 hideLoading();
@@ -302,4 +317,3 @@ $(document).ready(function() {
 {% block extrajs %}{% endblock %}
 </body>
 </html>
-```

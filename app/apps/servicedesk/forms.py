@@ -1,18 +1,28 @@
 # servicedesk/forms.py
 from django import forms
 from .models import Ticket, WorkOrder
+from apps.customers.models import Customer # Importar o modelo Customer
 
 class TicketForm(forms.ModelForm):
+    # Adicionar o campo customer ao formulário
+    customer = forms.ModelChoiceField(
+        queryset=Customer.objects.all(),
+        required=False, # Defina como True se um cliente for sempre obrigatório
+        widget=forms.Select(attrs={'class': 'form-control custom-select'}),
+        label="Cliente"
+    )
+
     class Meta:
         model = Ticket
-        fields = ['title', 'description', 'priority', 'status', 'assigned_to'] # Adicione 'category' se usar
+        # Adicionar 'customer' aos fields
+        fields = ['title', 'customer', 'description', 'priority', 'status', 'assigned_to']
         widgets = {
             'title': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Título breve do problema'}),
             'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 5, 'placeholder': 'Descreva o problema detalhadamente'}),
             'priority': forms.Select(attrs={'class': 'form-control custom-select'}),
             'status': forms.Select(attrs={'class': 'form-control custom-select'}),
             'assigned_to': forms.Select(attrs={'class': 'form-control custom-select'}),
-            'category': forms.Select(attrs={'class': 'form-control custom-select'}),
+            # 'category': forms.Select(attrs={'class': 'form-control custom-select'}), # Se você tiver categorias
         }
         labels = {
             'title': 'Título do Ticket',
@@ -24,20 +34,22 @@ class TicketForm(forms.ModelForm):
         }
 
     def __init__(self, *args, **kwargs):
-        user = kwargs.pop('user', None) # Para potencialmente filtrar usuários ou definir 'created_by'
+        user = kwargs.pop('user', None)
         super().__init__(*args, **kwargs)
-        # Exemplo: Limitar opções de 'assigned_to' para usuários que são técnicos
-        # if user and hasattr(user, 'userprofile') and user.userprofile.is_technician:
-        #     self.fields['assigned_to'].queryset = User.objects.filter(userprofile__is_technician=True)
-        # else:
-        #     self.fields['assigned_to'].queryset = User.objects.all() # Ou alguma outra lógica
-
-        # Se o campo 'created_by' fosse editável (geralmente não é no form, é pego da request.user):
-        if user:
-            self.instance.created_by = user
+        # O campo 'customer' já foi definido acima, então não precisa de manipulação especial aqui
+        # a menos que você queira filtrar o queryset de clientes com base no usuário, por exemplo.
 
 
 class WorkOrderForm(forms.ModelForm):
+    # Se quiser adicionar cliente diretamente à OS, embora já venha do ticket:
+    # customer = forms.ModelChoiceField(
+    #     queryset=Customer.objects.all(),
+    #     required=False,
+    #     widget=forms.Select(attrs={'class': 'form-control custom-select select2'}), # Adicionar select2 se usado
+    #     label="Cliente da OS"
+    # )
+    # No entanto, vamos manter a OS vinculada ao cliente do ticket por enquanto.
+
     class Meta:
         model = WorkOrder
         fields = ['ticket', 'description', 'status', 'assigned_technician', 'scheduled_date', 'notes']
@@ -60,5 +72,5 @@ class WorkOrderForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # Você pode querer filtrar o queryset de 'ticket' para apenas tickets abertos ou algo assim
-        # self.fields['ticket'].queryset = Ticket.objects.filter(status__in=['ABERTO', 'EM_ANDAMENTO'])
+        # Filtra tickets para mostrar apenas os que não estão fechados ou resolvidos.
+        self.fields['ticket'].queryset = Ticket.objects.exclude(status__in=['FECHADO', 'RESOLVIDO'])

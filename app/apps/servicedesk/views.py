@@ -2,14 +2,15 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.http import JsonResponse, HttpResponse
 from django.template.loader import render_to_string
-from django.contrib.auth.decorators import login_required # Importante para proteger views
-from .models import Ticket, WorkOrder, User # Adicionado User para assigned_technician
+from django.contrib.auth.decorators import login_required
+from .models import Ticket, WorkOrder, User
+from apps.customers.models import Customer # Importar Customer
 from .forms import TicketForm, WorkOrderForm
-from django.contrib import messages # Para feedback ao usuário
+from django.contrib import messages
 
-# @login_required # Descomente para exigir login
+# @login_required
 def ticket_list(request):
-    tickets = Ticket.objects.all() # Ou filtre conforme necessário, ex: request.user
+    tickets = Ticket.objects.all()
     context = {
         'tickets': tickets,
         'page_title': 'Lista de Tickets'
@@ -18,11 +19,20 @@ def ticket_list(request):
 
 # @login_required
 def ticket_create_modal(request):
+    initial_data = {}
+    customer_id = request.GET.get('customer_id')
+    if customer_id:
+        try:
+            customer = Customer.objects.get(pk=customer_id)
+            initial_data['customer'] = customer
+        except Customer.DoesNotExist:
+            messages.warning(request, f"Cliente com ID {customer_id} não encontrado.")
+
     if request.method == 'POST':
-        form = TicketForm(request.POST, user=request.user)
+        form = TicketForm(request.POST, user=request.user) # Passa initial_data se necessário, mas o campo customer já está no POST
         if form.is_valid():
             ticket = form.save(commit=False)
-            if request.user.is_authenticated: # Garante que o usuário está logado
+            if request.user.is_authenticated:
                 ticket.created_by = request.user
             ticket.save()
             if request.headers.get('x-requested-with') == 'XMLHttpRequest':
@@ -34,7 +44,7 @@ def ticket_create_modal(request):
                 return JsonResponse({'success': False, 'errors': form.errors.as_json()}, status=400)
             messages.error(request, 'Erro ao criar o ticket. Verifique os dados.')
     else:
-        form = TicketForm(user=request.user)
+        form = TicketForm(user=request.user, initial=initial_data) # Passa initial_data aqui
 
     context = {
         'form': form,
@@ -52,6 +62,15 @@ def ticket_create_modal(request):
 # @login_required
 def ticket_update_modal(request, pk):
     ticket = get_object_or_404(Ticket, pk=pk)
+    # Não permitir edição se o ticket estiver fechado ou resolvido
+    if ticket.status in ['FECHADO', 'RESOLVIDO']:
+        if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+            # Retorna um fragmento HTML indicando que não é editável
+            return HttpResponse(f'<div class="modal-header"><h5 class="modal-title">Ticket #{ticket.pk}</h5><button type="button" class="close" data-dismiss="modal">&times;</button></div><div class="modal-body"><p class="alert alert-warning">Este ticket está {ticket.get_status_display()} e não pode ser editado.</p></div><div class="modal-footer"><button type="button" class="btn btn-secondary" data-dismiss="modal">Fechar</button></div>')
+        messages.warning(request, f'Ticket {ticket.get_status_display()} não pode ser editado.')
+        return redirect('servicedesk:ticket_list')
+
+
     if request.method == 'POST':
         form = TicketForm(request.POST, instance=ticket, user=request.user)
         if form.is_valid():
@@ -84,13 +103,10 @@ def ticket_update_modal(request, pk):
 # @login_required
 def ticket_detail_modal(request, pk):
     ticket = get_object_or_404(Ticket, pk=pk)
-    work_orders = ticket.work_orders.all() # Carrega OS relacionadas
-    # comments = ticket.comments.all() # Se tiver comentários
-
+    work_orders = ticket.work_orders.all()
     context = {
         'ticket': ticket,
-        'work_orders': work_orders, # Adiciona OS ao contexto
-        # 'comments': comments,
+        'work_orders': work_orders,
         'detail_title': f'Detalhes do Ticket #{ticket.pk}'
     }
 
@@ -129,21 +145,36 @@ def ticket_delete_modal(request, pk):
 # @login_required
 def work_order_list(request):
     work_orders = WorkOrder.objects.all()
-    # Buscar todos os tickets para popular o select no template
-    # Idealmente, filtre por tickets que podem receber novas OS (ex: não fechados)
-    tickets_for_wo = Ticket.objects.exclude(status__in=['FECHADO', 'RESOLVIDO']) # Exemplo de filtro
-    # Ou simplesmente todos:
-    # tickets_for_wo = Ticket.objects.all()
+    tickets_for_wo = Ticket.objects.exclude(status__in=['FECHADO', 'RESOLVIDO'])
 
     context = {
         'work_orders': work_orders,
-        'tickets_for_wo_creation': tickets_for_wo, # Adicionado ao contexto
+        'tickets_for_wo_creation': tickets_for_wo,
         'page_title': 'Lista de Ordens de Serviço'
     }
     return render(request, 'servicedesk/work_order_list.html', context)
 
 # @login_required
 def work_order_create_modal(request):
+    initial_data = {}
+    ticket_id = request.GET.get('ticket_id')
+    customer_id = request.GET.get('customer_id') # Se vier da tela de cliente
+
+    if ticket_id:
+        try:
+            ticket = Ticket.objects.exclude(status__in=['FECHADO', 'RESOLVIDO']).get(pk=ticket_id)
+            initial_data['ticket'] = ticket
+        except Ticket.DoesNotExist:
+            messages.warning(request, f"Ticket com ID {ticket_id} não encontrado ou não apto para novas OS.")
+    elif customer_id: # Se não tem ticket_id mas tem customer_id, filtra os tickets para esse cliente
+        try:
+            customer = Customer.objects.get(pk=customer_id)
+            # Deixa o usuário selecionar um ticket do cliente
+            # A view do form da OS já filtra os tickets para não fechados/resolvidos
+        except Customer.DoesNotExist:
+             messages.warning(request, f"Cliente com ID {customer_id} não encontrado.")
+
+
     if request.method == 'POST':
         form = WorkOrderForm(request.POST)
         if form.is_valid():
@@ -158,19 +189,9 @@ def work_order_create_modal(request):
                 return JsonResponse({'success': False, 'errors': form.errors.as_json()}, status=400)
             messages.error(request, 'Erro ao criar a Ordem de Serviço. Verifique os dados.')
     else:
-        form = WorkOrderForm()
-        ticket_id = request.GET.get('ticket_id')
-        if ticket_id:
-            try:
-                # Garante que o ticket exista e não esteja em um estado que impeça novas OS
-                ticket = Ticket.objects.exclude(status__in=['FECHADO', 'RESOLVIDO']).get(pk=ticket_id)
-                form.fields['ticket'].initial = ticket
-                # Você pode querer tornar o campo 'ticket' readonly se ele for pré-selecionado
-                # form.fields['ticket'].widget.attrs['disabled'] = True
-                # Cuidado: campos desabilitados não são enviados no POST,
-                # então você precisaria pegar o ticket_id de outra forma no POST ou não desabilitar.
-            except Ticket.DoesNotExist:
-                messages.warning(request, f"Ticket com ID {ticket_id} não encontrado ou não apto para novas OS.")
+        form = WorkOrderForm(initial=initial_data)
+        if customer_id and not ticket_id: # Se veio da tela de cliente, filtra os tickets no form
+             form.fields['ticket'].queryset = Ticket.objects.filter(customer_id=customer_id).exclude(status__in=['FECHADO', 'RESOLVIDO'])
 
 
     context = {
@@ -188,6 +209,13 @@ def work_order_create_modal(request):
 # @login_required
 def work_order_update_modal(request, pk):
     work_order = get_object_or_404(WorkOrder, pk=pk)
+    # Não permitir edição se a OS estiver concluída ou cancelada
+    if work_order.status in ['CONCLUIDA', 'CANCELADA']:
+        if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+            return HttpResponse(f'<div class="modal-header"><h5 class="modal-title">OS #{work_order.pk}</h5><button type="button" class="close" data-dismiss="modal">&times;</button></div><div class="modal-body"><p class="alert alert-warning">Esta OS está {work_order.get_status_display()} e não pode ser editada.</p></div><div class="modal-footer"><button type="button" class="btn btn-secondary" data-dismiss="modal">Fechar</button></div>')
+        messages.warning(request, f'OS {work_order.get_status_display()} não pode ser editada.')
+        return redirect('servicedesk:work_order_list')
+
     if request.method == 'POST':
         form = WorkOrderForm(request.POST, instance=work_order)
         if form.is_valid():

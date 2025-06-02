@@ -23,6 +23,7 @@ from django.views.generic import RedirectView
 urlpatterns = [
     path('admin/', admin.site.urls),
      path('servicedesk/', include('apps.servicedesk.urls', namespace='servicedesk')),
+    path('customers/', include('apps.customers.urls', namespace='customers')), # Novas URLs de clientes
     # Redireciona a URL raiz '/' para a lista de tickets
     path('', RedirectView.as_view(url='/servicedesk/tickets/', permanent=True)),
 

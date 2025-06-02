@@ -138,8 +138,6 @@ $(document).ready(function() {
         var ticketId = $('#ticket_id_select').val();
         if (ticketId) {
             var url = "{% url 'servicedesk:work_order_create_modal' %}?ticket_id=" + ticketId;
-            var modalContentUrl = "{% url 'servicedesk:work_order_create_modal' %}?ticket_id=" + ticketId;
-            console.log("1. URL do conteúdo do modal gerada:", modalContentUrl); // Adicione para depurar
             // Simula o clique no data-toggle="ajax-modal"
             // Isso requer que o script principal em base.html esteja ouvindo 'click' em elementos com este atributo.
             // Uma forma mais direta seria chamar a função de abrir modal diretamente se ela for global.

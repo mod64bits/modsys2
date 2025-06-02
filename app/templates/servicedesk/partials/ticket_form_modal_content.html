@@ -1,4 +1,6 @@
-{% load crispy_forms_tags %} <div class="modal-header">
+{% load crispy_forms_tags %}
+
+<div class="modal-header">
     <h5 class="modal-title" id="ajaxModalLabel">{{ form_title|default:"Formulário de Ticket" }}</h5>
     <button type="button" class="close" data-dismiss="modal" aria-label="Close">
         <span aria-hidden="true">&times;</span>
@@ -17,39 +19,67 @@
             {% endif %}
         </div>
 
-        {% if form.media %}
-            {{ form.media }} {% endif %}
-
-        {% comment %}
-        {% for field in form %}
-            <div class="form-group">
-                <label for="{{ field.id_for_label }}">{{ field.label }}</label>
-                {{ field }}
-                {% if field.help_text %}
-                    <small class="form-text text-muted">{{ field.help_text }}</small>
-                {% endif %}
-                {% for error in field.errors %}
-                    <div class="invalid-feedback d-block">{{ error }}</div>
-                {% endfor %}
-            </div>
-        {% endfor %}
-        {% endcomment %}
+        {% if form.media %}{{ form.media }}{% endif %}
 
         {% if crispy_forms_tags %}
              {{ form|crispy }}
         {% else %}
-            {% for field in form %}
-                <div class="form-group">
-                    <label for="{{ field.id_for_label }}">{{ field.label_tag }}</label>
-                    {{ field }}
-                    {% if field.help_text %}
-                        <small id="{{ field.id_for_label }}_help" class="form-text text-muted">{{ field.help_text }}</small>
-                    {% endif %}
-                    {% for error in field.errors %}
-                        <div class="invalid-feedback" style="display: block;">{{ error }}</div>
-                    {% endfor %}
+            <div class="form-group">
+                {{ form.title.label_tag }}
+                {{ form.title }}
+                {% for error in form.title.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+            </div>
+
+            <div class="form-group">
+                {{ form.customer.label_tag }}
+                <div class="input-group">
+                    {{ form.customer }}
+                    <div class="input-group-append">
+                        <button type="button" class="btn btn-outline-secondary"
+                                data-toggle="ajax-modal"
+                                data-target="#ajaxModal"
+                                data-url="{% url 'customers:customer_create_modal' %}"
+                                title="Novo Cliente Rápido">
+                            <i class="fas fa-plus"></i>
+                        </button>
+                    </div>
                 </div>
-            {% endfor %}
+                {% for error in form.customer.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+            </div>
+
+            <div class="form-group">
+                {{ form.description.label_tag }}
+                {{ form.description }}
+                {% for error in form.description.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+            </div>
+
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="form-group">
+                        {{ form.priority.label_tag }}
+                        {{ form.priority }}
+                        {% for error in form.priority.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="form-group">
+                        {{ form.status.label_tag }}
+                        {{ form.status }}
+                        {% for error in form.status.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-group">
+                {{ form.assigned_to.label_tag }}
+                {{ form.assigned_to }}
+                {% for error in form.assigned_to.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+            </div>
+            <!-- Se tiver categoria:
+            <div class="form-group">
+                {{ form.category.label_tag }} {{ form.category }} {% for error in form.category.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+            </div>
+            -->
         {% endif %}
 
     </div>
@@ -58,3 +88,25 @@
         <button type="submit" class="btn btn-primary">Salvar Ticket</button>
     </div>
 </form>
+<script>
+$(document).ready(function() {
+    // Tenta pré-selecionar o cliente se um customer_id foi passado via GET para a view
+    // A view ticket_create_modal já passa o 'initial' para o formulário.
+    // Esta parte do script é mais para garantir que o select seja atualizado se o valor mudar dinamicamente,
+    // ou se você estiver usando Select2 e precisar reiniciá-lo.
+
+    // Exemplo de inicialização do Select2 (se você decidir usá-lo)
+    // if ($.fn.select2) {
+    //     $('#{{ form.customer.id_for_label }}').select2({
+    //         theme: 'bootstrap4',
+    //         dropdownParent: $('#ajaxModal'), // Importante para Select2 dentro de modais Bootstrap
+    //         placeholder: "Selecione um cliente",
+    //         allowClear: true
+    //     });
+    //     // Outros selects que você queira com Select2
+    //     $('#{{ form.priority.id_for_label }}').select2({ theme: 'bootstrap4', dropdownParent: $('#ajaxModal')});
+    //     $('#{{ form.status.id_for_label }}').select2({ theme: 'bootstrap4', dropdownParent: $('#ajaxModal')});
+    //     $('#{{ form.assigned_to.id_for_label }}').select2({ theme: 'bootstrap4', dropdownParent: $('#ajaxModal')});
+    // }
+});
+</script>
