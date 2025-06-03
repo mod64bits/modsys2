@@ -56,6 +56,7 @@ INSTALLED_APPS = [
     'apps.servicedesk',
     'apps.clientes',
     'apps.customers',
+    'apps.reports'
 ]
 
 MIDDLEWARE = [
