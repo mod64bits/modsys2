@@ -1,12 +1,28 @@
 # servicedesk/views.py
 from django.shortcuts import render, redirect, get_object_or_404
 from django.http import JsonResponse, HttpResponse
-from django.template.loader import render_to_string
+from django.template.loader import render_to_string, get_template
 from django.contrib.auth.decorators import login_required
 from .models import Ticket, WorkOrder, User
-from apps.customers.models import Customer # Importar Customer
+from apps.customers.models import Customer
 from .forms import TicketForm, WorkOrderForm
 from django.contrib import messages
+from django.db.models import Q, Case, When, Value, IntegerField
+from django.db import models
+
+# Para PDF
+from io import BytesIO
+from xhtml2pdf import pisa # Importar pisa
+
+# Função auxiliar para renderizar PDF
+def render_to_pdf(template_src, context_dict={}):
+    template = get_template(template_src)
+    html  = template.render(context_dict)
+    result = BytesIO()
+    pdf = pisa.pisaDocument(BytesIO(html.encode("UTF-8")), result) # Alterado para UTF-8
+    if not pdf.err:
+        return HttpResponse(result.getvalue(), content_type='application/pdf')
+    return None
 
 # @login_required
 def ticket_list(request):
@@ -29,7 +45,7 @@ def ticket_create_modal(request):
             messages.warning(request, f"Cliente com ID {customer_id} não encontrado.")
 
     if request.method == 'POST':
-        form = TicketForm(request.POST, user=request.user) # Passa initial_data se necessário, mas o campo customer já está no POST
+        form = TicketForm(request.POST, user=request.user)
         if form.is_valid():
             ticket = form.save(commit=False)
             if request.user.is_authenticated:
@@ -44,7 +60,7 @@ def ticket_create_modal(request):
                 return JsonResponse({'success': False, 'errors': form.errors.as_json()}, status=400)
             messages.error(request, 'Erro ao criar o ticket. Verifique os dados.')
     else:
-        form = TicketForm(user=request.user, initial=initial_data) # Passa initial_data aqui
+        form = TicketForm(user=request.user, initial=initial_data)
 
     context = {
         'form': form,
@@ -62,10 +78,8 @@ def ticket_create_modal(request):
 # @login_required
 def ticket_update_modal(request, pk):
     ticket = get_object_or_404(Ticket, pk=pk)
-    # Não permitir edição se o ticket estiver fechado ou resolvido
     if ticket.status in ['FECHADO', 'RESOLVIDO']:
         if request.headers.get('x-requested-with') == 'XMLHttpRequest':
-            # Retorna um fragmento HTML indicando que não é editável
             return HttpResponse(f'<div class="modal-header"><h5 class="modal-title">Ticket #{ticket.pk}</h5><button type="button" class="close" data-dismiss="modal">&times;</button></div><div class="modal-body"><p class="alert alert-warning">Este ticket está {ticket.get_status_display()} e não pode ser editado.</p></div><div class="modal-footer"><button type="button" class="btn btn-secondary" data-dismiss="modal">Fechar</button></div>')
         messages.warning(request, f'Ticket {ticket.get_status_display()} não pode ser editado.')
         return redirect('servicedesk:ticket_list')
@@ -158,7 +172,7 @@ def work_order_list(request):
 def work_order_create_modal(request):
     initial_data = {}
     ticket_id = request.GET.get('ticket_id')
-    customer_id = request.GET.get('customer_id') # Se vier da tela de cliente
+    customer_id = request.GET.get('customer_id')
 
     if ticket_id:
         try:
@@ -166,11 +180,9 @@ def work_order_create_modal(request):
             initial_data['ticket'] = ticket
         except Ticket.DoesNotExist:
             messages.warning(request, f"Ticket com ID {ticket_id} não encontrado ou não apto para novas OS.")
-    elif customer_id: # Se não tem ticket_id mas tem customer_id, filtra os tickets para esse cliente
+    elif customer_id:
         try:
             customer = Customer.objects.get(pk=customer_id)
-            # Deixa o usuário selecionar um ticket do cliente
-            # A view do form da OS já filtra os tickets para não fechados/resolvidos
         except Customer.DoesNotExist:
              messages.warning(request, f"Cliente com ID {customer_id} não encontrado.")
 
@@ -190,7 +202,7 @@ def work_order_create_modal(request):
             messages.error(request, 'Erro ao criar a Ordem de Serviço. Verifique os dados.')
     else:
         form = WorkOrderForm(initial=initial_data)
-        if customer_id and not ticket_id: # Se veio da tela de cliente, filtra os tickets no form
+        if customer_id and not ticket_id:
              form.fields['ticket'].queryset = Ticket.objects.filter(customer_id=customer_id).exclude(status__in=['FECHADO', 'RESOLVIDO'])
 
 
@@ -209,7 +221,6 @@ def work_order_create_modal(request):
 # @login_required
 def work_order_update_modal(request, pk):
     work_order = get_object_or_404(WorkOrder, pk=pk)
-    # Não permitir edição se a OS estiver concluída ou cancelada
     if work_order.status in ['CONCLUIDA', 'CANCELADA']:
         if request.headers.get('x-requested-with') == 'XMLHttpRequest':
             return HttpResponse(f'<div class="modal-header"><h5 class="modal-title">OS #{work_order.pk}</h5><button type="button" class="close" data-dismiss="modal">&times;</button></div><div class="modal-body"><p class="alert alert-warning">Esta OS está {work_order.get_status_display()} e não pode ser editada.</p></div><div class="modal-footer"><button type="button" class="btn btn-secondary" data-dismiss="modal">Fechar</button></div>')
@@ -280,3 +291,41 @@ def work_order_delete_modal(request, pk):
         return HttpResponse(html_content)
 
     return JsonResponse({'error': 'Acesso direto não permitido ou esperado.'}, status=403)
+
+
+# Novas Views para PDF
+# @login_required
+def ticket_pdf_view(request, pk):
+    ticket = get_object_or_404(Ticket, pk=pk)
+    work_orders = ticket.work_orders.all().order_by('created_at')
+    context = {
+        'ticket': ticket,
+        'work_orders': work_orders,
+        'company_name': 'Nome da Sua Empresa Aqui' # Você pode pegar isso das configurações ou de um modelo
+    }
+    pdf = render_to_pdf('servicedesk/pdf/ticket_pdf_template.html', context)
+    if pdf:
+        response = HttpResponse(pdf, content_type='application/pdf')
+        filename = f"Ticket_{ticket.id}.pdf"
+        content = f"inline; filename='{filename}'" # Mostra no navegador
+        # content = f"attachment; filename='{filename}'" # Força download
+        response['Content-Disposition'] = content
+        return response
+    return HttpResponse("Erro ao gerar PDF.", status=500)
+
+# @login_required
+def work_order_pdf_view(request, pk):
+    work_order = get_object_or_404(WorkOrder, pk=pk)
+    context = {
+        'work_order': work_order,
+        'company_name': 'Nome da Sua Empresa Aqui'
+    }
+    pdf = render_to_pdf('servicedesk/pdf/work_order_pdf_template.html', context)
+    if pdf:
+        response = HttpResponse(pdf, content_type='application/pdf')
+        filename = f"OS_{work_order.id}.pdf"
+        content = f"inline; filename='{filename}'"
+        # content = f"attachment; filename='{filename}'"
+        response['Content-Disposition'] = content
+        return response
+    return HttpResponse("Erro ao gerar PDF.", status=500)

@@ -46,12 +46,17 @@
     </dl>
 </div>
 <div class="modal-footer">
+    <a href="{% url 'servicedesk:work_order_pdf' work_order.pk %}" target="_blank" class="btn btn-info mr-auto">
+        <i class="fas fa-file-pdf"></i> Gerar PDF
+    </a>
     <button type="button" class="btn btn-secondary" data-dismiss="modal">Fechar</button>
-    <button type="button" class="btn btn-warning" 
+    {% if work_order.status not in "CONCLUIDA,CANCELADA" %}
+    <button type="button" class="btn btn-warning"
             data-dismiss="modal"
-            data-toggle="ajax-modal" 
+            data-toggle="ajax-modal"
             data-target="#ajaxModal"
             data-url="{% url 'servicedesk:work_order_update_modal' work_order.pk %}">
         <i class="fas fa-edit"></i> Editar OS
     </button>
+    {% endif %}
 </div>
