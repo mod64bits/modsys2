@@ -10,7 +10,7 @@ from django.contrib import messages
 from django.db.models import Q, Case, When, Value, IntegerField # Importar Case, When, Value, IntegerField
 from django.db import models # Adicionada a importação que faltava
 
-# @login_required
+@login_required
 def customer_list(request):
     customers = Customer.objects.all()
     context = {
@@ -19,7 +19,7 @@ def customer_list(request):
     }
     return render(request, 'customers/customer_list.html', context)
 
-# @login_required
+@login_required
 def customer_create_modal(request):
     if request.method == 'POST':
         form = CustomerForm(request.POST)
@@ -46,7 +46,7 @@ def customer_create_modal(request):
         return HttpResponse(html_form)
     return JsonResponse({'error': 'Acesso direto não permitido.'}, status=403)
 
-# @login_required
+@login_required
 def customer_update_modal(request, pk):
     customer = get_object_or_404(Customer, pk=pk)
     if request.method == 'POST':
@@ -75,7 +75,7 @@ def customer_update_modal(request, pk):
         return HttpResponse(html_form)
     return JsonResponse({'error': 'Acesso direto não permitido.'}, status=403)
 
-# @login_required
+@login_required
 def customer_detail_modal(request, pk):
     customer = get_object_or_404(Customer, pk=pk)
 
@@ -115,7 +115,7 @@ def customer_detail_modal(request, pk):
         return HttpResponse(html_content)
     return JsonResponse({'error': 'Acesso direto não permitido.'}, status=403)
 
-# @login_required
+@login_required
 def customer_delete_modal(request, pk):
     customer = get_object_or_404(Customer, pk=pk)
     if request.method == 'POST':

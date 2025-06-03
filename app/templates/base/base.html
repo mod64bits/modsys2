@@ -41,7 +41,7 @@
         <a class="nav-link" data-widget="pushmenu" href="#" role="button"><i class="fas fa-bars"></i></a>
       </li>
       <li class="nav-item d-none d-sm-inline-block">
-        <a href="{% url 'servicedesk:ticket_list' %}" class="nav-link">Home</a>
+        <a href="{% if user.is_authenticated %}{% url 'servicedesk:ticket_list' %}{% else %}{% url 'login' %}{% endif %}" class="nav-link">Home</a>
       </li>
       </ul>
 
@@ -54,16 +54,16 @@
         <div class="dropdown-menu dropdown-menu-lg dropdown-menu-right">
           <span class="dropdown-item dropdown-header">Opções do Usuário</span>
           <div class="dropdown-divider"></div>
-          <a href="#" class="dropdown-item"> <i class="fas fa-user-cog mr-2"></i> Meu Perfil
-          </a>
-          <div class="dropdown-divider"></div>
-          <a href="#" class="dropdown-item"> <i class="fas fa-sign-out-alt mr-2"></i> Sair
+          <form method="post" action="{% url 'logout' %}" id="logoutForm" style="display: none;">{% csrf_token %}</form>
+          <a href="#" class="dropdown-item" onclick="event.preventDefault(); document.getElementById('logoutForm').submit();">
+            <i class="fas fa-sign-out-alt mr-2"></i> Sair
           </a>
         </div>
       </li>
       {% else %}
       <li class="nav-item">
-        <a class="nav-link" href="#"> <i class="fas fa-sign-in-alt"></i> Entrar
+        <a class="nav-link" href="{% url 'login' %}">
+          <i class="fas fa-sign-in-alt"></i> Entrar
         </a>
       </li>
       {% endif %}
@@ -75,7 +75,7 @@
     </ul>
   </nav>
   <aside class="main-sidebar sidebar-dark-primary elevation-4">
-    <a href="{% url 'servicedesk:ticket_list' %}" class="brand-link">
+    <a href="{% if user.is_authenticated %}{% url 'servicedesk:ticket_list' %}{% else %}{% url 'login' %}{% endif %}" class="brand-link">
       <img src="{% static 'adminlte/dist/img/AdminLTELogo.png' %}" alt="AdminLTE Logo" class="brand-image img-circle elevation-3" style="opacity: .8">
       <span class="brand-text font-weight-light">Service Desk</span>
     </a>
@@ -94,6 +94,7 @@
 
       <nav class="mt-2">
         <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu" data-accordion="false">
+          {% if user.is_authenticated %} {# Mostrar itens do menu apenas se autenticado #}
           <li class="nav-item">
             <a href="{% url 'customers:customer_list' %}" class="nav-link {% if request.resolver_match.app_name == 'customers' %}active{% endif %}">
               <i class="nav-icon fas fa-users"></i>
@@ -112,11 +113,20 @@
               <p>Ordens de Serviço</p>
             </a>
           </li>
-          <li class="nav-item"> <a href="{% url 'reports:report_filter_page' %}" class="nav-link {% if request.resolver_match.app_name == 'reports' %}active{% endif %}">
+          <li class="nav-item">
+            <a href="{% url 'reports:report_filter_page' %}" class="nav-link {% if request.resolver_match.app_name == 'reports' %}active{% endif %}">
               <i class="nav-icon fas fa-chart-line"></i>
               <p>Relatórios</p>
             </a>
           </li>
+          {% else %}
+           <li class="nav-item">
+            <a href="{% url 'login' %}" class="nav-link {% if request.resolver_match.url_name == 'login' %}active{% endif %}">
+              <i class="nav-icon fas fa-sign-in-alt"></i>
+              <p>Login</p>
+            </a>
+          </li>
+          {% endif %}
           </ul>
       </nav>
       </div>
@@ -127,10 +137,10 @@
       <div class="container-fluid">
         <div class="row mb-2">
           <div class="col-sm-6">
-            <h1 class="m-0">{% block page_title %}{{ page_title|default:"Dashboard" }}{% endblock %}</h1>
+            <h1 class="m-0">{% block page_title %}{{ page_title|default:"Bem-vindo" }}{% endblock %}</h1>
           </div><div class="col-sm-6">
             <ol class="breadcrumb float-sm-right">
-              <li class="breadcrumb-item"><a href="{% url 'servicedesk:ticket_list' %}">Home</a></li>
+              <li class="breadcrumb-item"><a href="{% if user.is_authenticated %}{% url 'servicedesk:ticket_list' %}{% else %}{% url 'login' %}{% endif %}">Home</a></li>
               {% block breadcrumb %}{% endblock %}
               <li class="breadcrumb-item active">{{ page_title|default:"Página Atual" }}</li>
             </ol>
@@ -175,6 +185,7 @@
 <script src="{% static 'adminlte/plugins/jquery/jquery.min.js' %}"></script>
 <script src="{% static 'adminlte/plugins/bootstrap/js/bootstrap.bundle.min.js' %}"></script>
 <script src="{% static 'adminlte/dist/js/adminlte.min.js' %}"></script>
+
 <script>
 $(document).ready(function() {
     function showLoading() {
@@ -255,10 +266,10 @@ $(document).ready(function() {
                         });
                     }
                     setTimeout(function() {
-                        if (typeof filterForm !== 'undefined' && $('#filterForm').length) { // Se estiver na página de relatório
-                            $('#filterForm').submit(); // Re-submete o formulário de filtro
+                        if (typeof filterForm !== 'undefined' && $('#filterForm').length) {
+                            $('#filterForm').submit();
                         } else {
-                            location.reload(); // Recarrega a página atual
+                            location.reload();
                         }
                     }, 500);
                 } else {
@@ -308,15 +319,6 @@ $(document).ready(function() {
         $(this).find('.modal-content').html('');
         $(this).find('.modal-body .alert-danger').remove();
     });
-
-    // Inicialização global do Select2 para campos com a classe 'select2-filter'
-    // if ($.fn.select2) {
-    //     $('.select2-filter').select2({
-    //         theme: 'bootstrap4',
-    //         placeholder: "Selecione uma opção",
-    //         allowClear: true
-    //     });
-    // }
 });
 </script>
 

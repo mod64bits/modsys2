@@ -54,7 +54,6 @@ INSTALLED_APPS = [
     'apps.base',
     #'apps.ordem_servicos',
     'apps.servicedesk',
-    'apps.clientes',
     'apps.customers',
     'apps.reports'
 ]
@@ -159,3 +158,7 @@ AUTHENTICATION_BACKENDS = (
     'django.contrib.auth.backends.ModelBackend',
     'apps.account.backends.ModelBackend',
 )
+
+LOGIN_URL = 'login' # O nome da URL que usaremos para a página de login
+LOGIN_REDIRECT_URL = 'servicedesk:ticket_list' # Para onde ir após o login bem-sucedido
+LOGOUT_REDIRECT_URL = 'login' # Para onde ir após o logout

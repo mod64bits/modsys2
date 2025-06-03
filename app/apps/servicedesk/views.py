@@ -24,7 +24,7 @@ def render_to_pdf(template_src, context_dict={}):
         return HttpResponse(result.getvalue(), content_type='application/pdf')
     return None
 
-# @login_required
+@login_required
 def ticket_list(request):
     tickets = Ticket.objects.all()
     context = {
@@ -33,7 +33,7 @@ def ticket_list(request):
     }
     return render(request, 'servicedesk/ticket_list.html', context)
 
-# @login_required
+@login_required
 def ticket_create_modal(request):
     initial_data = {}
     customer_id = request.GET.get('customer_id')
@@ -75,7 +75,7 @@ def ticket_create_modal(request):
     return JsonResponse({'error': 'Acesso direto não permitido ou esperado.'}, status=403)
 
 
-# @login_required
+@login_required
 def ticket_update_modal(request, pk):
     ticket = get_object_or_404(Ticket, pk=pk)
     if ticket.status in ['FECHADO', 'RESOLVIDO']:
@@ -114,7 +114,7 @@ def ticket_update_modal(request, pk):
     return JsonResponse({'error': 'Acesso direto não permitido ou esperado.'}, status=403)
 
 
-# @login_required
+@login_required
 def ticket_detail_modal(request, pk):
     ticket = get_object_or_404(Ticket, pk=pk)
     work_orders = ticket.work_orders.all()
@@ -131,7 +131,7 @@ def ticket_detail_modal(request, pk):
     return JsonResponse({'error': 'Acesso direto não permitido ou esperado.'}, status=403)
 
 
-# @login_required
+@login_required
 def ticket_delete_modal(request, pk):
     ticket = get_object_or_404(Ticket, pk=pk)
     if request.method == 'POST':
@@ -156,7 +156,7 @@ def ticket_delete_modal(request, pk):
 
 
 # Views para WorkOrder
-# @login_required
+@login_required
 def work_order_list(request):
     work_orders = WorkOrder.objects.all()
     tickets_for_wo = Ticket.objects.exclude(status__in=['FECHADO', 'RESOLVIDO'])
@@ -168,7 +168,7 @@ def work_order_list(request):
     }
     return render(request, 'servicedesk/work_order_list.html', context)
 
-# @login_required
+@login_required
 def work_order_create_modal(request):
     initial_data = {}
     ticket_id = request.GET.get('ticket_id')
@@ -218,7 +218,7 @@ def work_order_create_modal(request):
 
     return JsonResponse({'error': 'Acesso direto não permitido ou esperado.'}, status=403)
 
-# @login_required
+@login_required
 def work_order_update_modal(request, pk):
     work_order = get_object_or_404(WorkOrder, pk=pk)
     if work_order.status in ['CONCLUIDA', 'CANCELADA']:
@@ -255,7 +255,7 @@ def work_order_update_modal(request, pk):
 
     return JsonResponse({'error': 'Acesso direto não permitido ou esperado.'}, status=403)
 
-# @login_required
+@login_required
 def work_order_detail_modal(request, pk):
     work_order = get_object_or_404(WorkOrder, pk=pk)
     context = {
@@ -269,7 +269,7 @@ def work_order_detail_modal(request, pk):
 
     return JsonResponse({'error': 'Acesso direto não permitido ou esperado.'}, status=403)
 
-# @login_required
+@login_required
 def work_order_delete_modal(request, pk):
     work_order = get_object_or_404(WorkOrder, pk=pk)
     if request.method == 'POST':
@@ -294,7 +294,7 @@ def work_order_delete_modal(request, pk):
 
 
 # Novas Views para PDF
-# @login_required
+@login_required
 def ticket_pdf_view(request, pk):
     ticket = get_object_or_404(Ticket, pk=pk)
     work_orders = ticket.work_orders.all().order_by('created_at')
@@ -313,7 +313,7 @@ def ticket_pdf_view(request, pk):
         return response
     return HttpResponse("Erro ao gerar PDF.", status=500)
 
-# @login_required
+@login_required
 def work_order_pdf_view(request, pk):
     work_order = get_object_or_404(WorkOrder, pk=pk)
     context = {

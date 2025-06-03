@@ -1,0 +1,177 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Service Desk | Login</title>
+
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700&display=fallback">
+  <link rel="stylesheet" href="{% static 'adminlte/plugins/fontawesome-free/css/all.min.css' %}">
+  <link rel="stylesheet" href="{% static 'adminlte/dist/css/adminlte.min.css' %}">
+  <link rel="stylesheet" href="{% static 'adminlte/plugins/icheck-bootstrap/icheck-bootstrap.min.css' %}">
+
+  <style>
+    body.login-page {
+      background: linear-gradient(-45deg, #007bff, #6610f2, #d63384, #20c997);
+      background-size: 400% 400%;
+      animation: gradientBG 15s ease infinite;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+    }
+
+    @keyframes gradientBG {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+
+    .login-box {
+      width: 380px;
+      animation: fadeInSlideUp 0.8s ease-out forwards;
+      opacity: 0;
+      transform: translateY(20px);
+      background: rgba(255, 255, 255, 0.95); /* Fundo levemente translúcido */
+      border-radius: 10px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+    }
+    
+    @keyframes fadeInSlideUp {
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .login-logo a, .login-logo a:hover {
+      color: #495057; /* Cor mais escura para o logo */
+      font-weight: 600;
+    }
+    
+    .login-card-body {
+        border-radius: 10px;
+    }
+
+    .btn-primary {
+        background-color: #007bff;
+        border-color: #007bff;
+        transition: background-color 0.3s ease, transform 0.2s ease;
+    }
+    .btn-primary:hover {
+        background-color: #0056b3;
+        border-color: #0056b3;
+        transform: translateY(-2px);
+    }
+    .form-control:focus {
+        border-color: #007bff;
+        box-shadow: 0 0 0 0.2rem rgba(0,123,255,.25);
+    }
+    .alert-danger ul {
+        list-style-type: none;
+        padding-left: 0;
+        margin-bottom: 0;
+    }
+  </style>
+</head>
+<body class="hold-transition login-page">
+<div class="login-box">
+  <div class="login-logo">
+    <a href="#"><b>Service</b>Desk</a>
+  </div>
+  <div class="card">
+    <div class="card-body login-card-body">
+      <p class="login-box-msg">Faça login para iniciar sua sessão</p>
+
+      {% if form.errors and not form.non_field_errors %}
+        <div class="alert alert-danger alert-dismissible">
+            <button type="button" class="close" data-dismiss="alert" aria-hidden="true">×</button>
+            <h5><i class="icon fas fa-ban"></i> Erro!</h5>
+            Por favor, corrija os erros abaixo.
+        </div>
+      {% endif %}
+      
+      {% if form.non_field_errors %}
+        <div class="alert alert-danger alert-dismissible">
+            <button type="button" class="close" data-dismiss="alert" aria-hidden="true">×</button>
+            <h5><i class="icon fas fa-ban"></i> Erro de Autenticação</h5>
+            {% for error in form.non_field_errors %}
+                <p>{{ error }}</p>
+            {% endfor %}
+        </div>
+      {% endif %}
+
+      <form action="{% url 'login' %}" method="post">
+        {% csrf_token %}
+        <div class="input-group mb-3">
+          {{ form.username }}
+          <div class="input-group-append">
+            <div class="input-group-text">
+              <span class="fas fa-user"></span>
+            </div>
+          </div>
+        </div>
+        {% for error in form.username.errors %}
+            <small class="text-danger d-block mb-2">{{ error }}</small>
+        {% endfor %}
+
+        <div class="input-group mb-3">
+          {{ form.password }}
+          <div class="input-group-append">
+            <div class="input-group-text">
+              <span class="fas fa-lock"></span>
+            </div>
+          </div>
+        </div>
+        {% for error in form.password.errors %}
+            <small class="text-danger d-block mb-2">{{ error }}</small>
+        {% endfor %}
+
+        <div class="row">
+          <div class="col-8">
+            <div class="icheck-primary">
+              <input type="checkbox" id="remember" name="remember">
+              <label for="remember">
+                Lembrar-me
+              </label>
+            </div>
+          </div>
+          <div class="col-4">
+            <button type="submit" class="btn btn-primary btn-block">Entrar</button>
+          </div>
+          </div>
+      </form>
+
+      <!-- <div class="social-auth-links text-center mb-3">
+        <p>- OU -</p>
+        <a href="#" class="btn btn-block btn-primary">
+          <i class="fab fa-facebook mr-2"></i> Sign in using Facebook
+        </a>
+        <a href="#" class="btn btn-block btn-danger">
+          <i class="fab fa-google-plus mr-2"></i> Sign in using Google+
+        </a>
+      </div> -->
+      <p class="mb-1 mt-3">
+        <a href="#">Esqueci minha senha</a>
+      </p>
+      <!-- <p class="mb-0">
+        <a href="register.html" class="text-center">Register a new membership</a>
+      </p> -->
+    </div>
+    </div>
+</div>
+<script src="{% static 'adminlte/plugins/jquery/jquery.min.js' %}"></script>
+<script src="{% static 'adminlte/plugins/bootstrap/js/bootstrap.bundle.min.js' %}"></script>
+<script src="{% static 'adminlte/dist/js/adminlte.min.js' %}"></script>
+
+<script>
+    // Adiciona classes do Bootstrap aos campos do formulário Django
+    $(document).ready(function(){
+        $('#id_username').addClass('form-control').attr('placeholder', 'Usuário');
+        $('#id_password').addClass('form-control').attr('placeholder', 'Senha');
+    });
+</script>
+
+</body>
+</html>
