@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Relatório Filtrado</title>
+    <style>
+        @page {
+            size: a4 portrait; /* ou landscape se precisar de mais largura */
+            margin: 1cm;
+             @frame header_frame {
+                -pdf-frame-content: header_content;
+                left: 30pt; width: 535pt; top: 20pt; height: 50pt;
+            }
+            @frame footer_frame {
+                -pdf-frame-content: footer_content;
+                left: 30pt; width: 535pt; top: 782pt; height: 20pt; /* Ajuste top para portrait */
+            }
+        }
+        body { font-family: "Helvetica", "Arial", sans-serif; font-size: 9pt; color: #333; }
+        h1 { text-align: center; font-size: 16pt; margin-bottom: 5mm; border-bottom: 1px solid #ccc; padding-bottom: 2mm;}
+        h2 { font-size: 12pt; margin-top: 6mm; margin-bottom: 3mm; border-bottom: 1px dotted #eee; padding-bottom: 1mm; background-color: #f0f0f0; padding: 2mm;}
+        table { width: 100%; border-collapse: collapse; margin-bottom: 4mm; font-size: 8pt; page-break-inside: auto; }
+        tr { page-break-inside: avoid; page-break-after: auto; }
+        th, td { border: 1px solid #ccc; padding: 1.5mm; text-align: left; vertical-align: top; }
+        th { background-color: #e9e9e9; font-weight: bold; }
+        .footer { text-align: center; font-size: 8pt; color: #777; }
+        .header { text-align: left; font-size: 9pt; color: #555; }
+        .filter-info { font-size: 8pt; margin-bottom: 5mm; padding: 2mm; border: 1px solid #eee; background-color: #f9f9f9;}
+        .filter-info p { margin: 0.5mm 0; }
+        .no-results { text-align: center; padding: 5mm; font-style: italic; }
+    </style>
+</head>
+<body>
+    <div id="header_content" class="header">
+        <strong>{{ company_name|default:"Sua Empresa" }}</strong> - Relatório Filtrado
+        <div style="float: right;">Data: {{ report_date|date:"d/m/Y H:i" }}</div>
+    </div>
+    <div id="footer_content" class="footer">
+        Página <pdf:pagenumber /> de <pdf:pagecount />
+    </div>
+
+    <h1>Relatório de Atividades</h1>
+
+    <div class="filter-info">
+        <p><strong>Filtros Aplicados:</strong></p>
+        <p><strong>Cliente:</strong> {{ customer_filter.nome|default:"Todos" }}</p>
+        <p><strong>Período:</strong> De {{ start_date_filter|date:"d/m/Y"|default:"Início" }} até {{ end_date_filter|date:"d/m/Y"|default:"Fim" }}</p>
+        <p><strong>Conteúdo:</strong> 
+            {% if content_type_filter == 'all' %}Tickets e Ordens de Serviço
+            {% elif content_type_filter == 'tickets_only' %}Somente Tickets
+            {% elif content_type_filter == 'work_orders_only' %}Somente Ordens de Serviço
+            {% endif %}
+        </p>
+    </div>
+
+    {% if content_type_filter == 'all' or content_type_filter == 'tickets_only' %}
+        <h2>Tickets ({{ tickets_results.count }})</h2>
+        {% if tickets_results %}
+        <table>
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Título</th>
+                    <th>Cliente</th>
+                    <th>Status</th>
+                    <th>Prioridade</th>
+                    <th>Criado Em</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for ticket in tickets_results %}
+                <tr>
+                    <td>#{{ ticket.id }}</td>
+                    <td>{{ ticket.title }}</td>
+                    <td>{{ ticket.customer.nome|default:"N/A" }}</td>
+                    <td>{{ ticket.get_status_display }}</td>
+                    <td>{{ ticket.get_priority_display }}</td>
+                    <td>{{ ticket.created_at|date:"d/m/Y H:i" }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p class="no-results">Nenhum ticket encontrado para os filtros aplicados.</p>
+        {% endif %}
+    {% endif %}
+
+    {% if content_type_filter == 'all' or content_type_filter == 'work_orders_only' %}
+        <h2>Ordens de Serviço ({{ work_orders_results.count }})</h2>
+        {% if work_orders_results %}
+        <table>
+            <thead>
+                <tr>
+                    <th>ID OS</th>
+                    <th>Ticket ID</th>
+                    <th>Cliente</th>
+                    <th>Descrição</th>
+                    <th>Status</th>
+                    <th>Criado Em</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for wo in work_orders_results %}
+                <tr>
+                    <td>#{{ wo.id }}</td>
+                    <td>#{{ wo.ticket.id }}</td>
+                    <td>{{ wo.ticket.customer.nome|default:"N/A" }}</td>
+                    <td>{{ wo.description }}</td>
+                    <td>{{ wo.get_status_display }}</td>
+                    <td>{{ wo.created_at|date:"d/m/Y H:i" }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p class="no-results">Nenhuma ordem de serviço encontrada para os filtros aplicados.</p>
+        {% endif %}
+    {% endif %}
+
+</body>
+</html>

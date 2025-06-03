@@ -28,7 +28,7 @@
         color: white;
     }
     .nav-tabs .nav-link.active {
-        border-bottom: 2px solid #007bff; /* Cor da borda da aba ativa */
+        border-bottom: 2px solid #007bff;
     }
   </style>
 </head>
@@ -101,15 +101,20 @@
             </a>
           </li>
           <li class="nav-item">
-            <a href="{% url 'servicedesk:ticket_list' %}" class="nav-link {% if request.resolver_match.url_name == 'ticket_list' or request.resolver_match.app_name == 'servicedesk' and 'ticket' in request.resolver_match.url_name %}active{% endif %}">
+            <a href="{% url 'servicedesk:ticket_list' %}" class="nav-link {% if request.resolver_match.app_name == 'servicedesk' and 'ticket' in request.resolver_match.url_name %}active{% endif %}">
               <i class="nav-icon fas fa-ticket-alt"></i>
               <p>Tickets</p>
             </a>
           </li>
           <li class="nav-item">
-            <a href="{% url 'servicedesk:work_order_list' %}" class="nav-link {% if request.resolver_match.url_name == 'work_order_list' or request.resolver_match.app_name == 'servicedesk' and 'work_order' in request.resolver_match.url_name %}active{% endif %}">
+            <a href="{% url 'servicedesk:work_order_list' %}" class="nav-link {% if request.resolver_match.app_name == 'servicedesk' and 'work_order' in request.resolver_match.url_name %}active{% endif %}">
               <i class="nav-icon fas fa-tools"></i>
               <p>Ordens de Serviço</p>
+            </a>
+          </li>
+          <li class="nav-item"> <a href="{% url 'reports:report_filter_page' %}" class="nav-link {% if request.resolver_match.app_name == 'reports' %}active{% endif %}">
+              <i class="nav-icon fas fa-chart-line"></i>
+              <p>Relatórios</p>
             </a>
           </li>
           </ul>
@@ -170,7 +175,6 @@
 <script src="{% static 'adminlte/plugins/jquery/jquery.min.js' %}"></script>
 <script src="{% static 'adminlte/plugins/bootstrap/js/bootstrap.bundle.min.js' %}"></script>
 <script src="{% static 'adminlte/dist/js/adminlte.min.js' %}"></script>
-
 <script>
 $(document).ready(function() {
     function showLoading() {
@@ -188,7 +192,6 @@ $(document).ready(function() {
         if (clickedElement && clickedElement.length && typeof clickedElement.prop === 'function') {
             var url = clickedElement.data('url') || clickedElement.attr('href');
             if (!url || url === '#') {
-                console.error("URL inválida para o modal AJAX: ", url);
                 return;
             }
             var modalTarget = $(clickedElement.data('target') || '#ajaxModal');
@@ -212,7 +215,7 @@ $(document).ready(function() {
         }
     });
 
-    $(document).on('submit', '#ajaxModal form.ajax-form', function(event) { // Mais específico para forms com a classe .ajax-form dentro do modal
+    $(document).on('submit', '#ajaxModal form.ajax-form', function(event) {
         event.preventDefault();
         var form = $(this);
         var url = form.attr('action');
@@ -240,7 +243,6 @@ $(document).ready(function() {
                             '<button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button></div>'
                         );
                     }
-                    // Adicionado para atualizar o select de clientes em outros formulários, se existir
                     if (response.customer_id && response.customer_name) {
                         $('select[name="customer"]').each(function() {
                             var $select = $(this);
@@ -250,17 +252,13 @@ $(document).ready(function() {
                                     text: response.customer_name
                                 }));
                             }
-                            // Opcional: selecionar o cliente recém-criado
-                            // $select.val(response.customer_id).trigger('change');
                         });
                     }
                     setTimeout(function() {
-                        // Tenta recarregar apenas a lista principal se possível, senão a página toda
-                        if ($('#customer-list-table').length) { // Exemplo, se a tabela de clientes tiver um ID
-                             // Implementar recarregamento parcial da tabela aqui
-                             location.reload(); // Fallback por enquanto
+                        if (typeof filterForm !== 'undefined' && $('#filterForm').length) { // Se estiver na página de relatório
+                            $('#filterForm').submit(); // Re-submete o formulário de filtro
                         } else {
-                             location.reload();
+                            location.reload(); // Recarrega a página atual
                         }
                     }, 500);
                 } else {
@@ -311,6 +309,14 @@ $(document).ready(function() {
         $(this).find('.modal-body .alert-danger').remove();
     });
 
+    // Inicialização global do Select2 para campos com a classe 'select2-filter'
+    // if ($.fn.select2) {
+    //     $('.select2-filter').select2({
+    //         theme: 'bootstrap4',
+    //         placeholder: "Selecione uma opção",
+    //         allowClear: true
+    //     });
+    // }
 });
 </script>
 
