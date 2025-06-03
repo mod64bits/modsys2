@@ -55,7 +55,8 @@ INSTALLED_APPS = [
     #'apps.ordem_servicos',
     'apps.servicedesk',
     'apps.customers',
-    'apps.reports'
+    'apps.reports',
+    'apps.inventory',
 ]
 
 MIDDLEWARE = [
