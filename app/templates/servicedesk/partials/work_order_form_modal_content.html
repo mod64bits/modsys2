@@ -1,0 +1,45 @@
+{% load crispy_forms_tags %} <div class="modal-header">
+    <h5 class="modal-title" id="ajaxModalLabel">{{ form_title|default:"Formulário de Ordem de Serviço" }}</h5>
+    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+        <span aria-hidden="true">&times;</span>
+    </button>
+</div>
+<form method="post" action="{{ form_action_url }}" class="ajax-form" id="workOrderModalForm">
+    {% csrf_token %}
+    <div class="modal-body">
+        <div class="form-errors-container">
+            {% if form.non_field_errors %}
+                <div class="alert alert-danger">
+                    {% for error in form.non_field_errors %}
+                        <p>{{ error }}</p>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        </div>
+
+        {% if form.media %}
+            {{ form.media }}
+        {% endif %}
+
+        {% if crispy_forms_tags %}
+             {{ form|crispy }}
+        {% else %}
+            {% for field in form %}
+                <div class="form-group">
+                    <label for="{{ field.id_for_label }}">{{ field.label_tag }}</label>
+                    {{ field }}
+                    {% if field.help_text %}
+                        <small id="{{ field.id_for_label }}_help" class="form-text text-muted">{{ field.help_text }}</small>
+                    {% endif %}
+                    {% for error in field.errors %}
+                        <div class="invalid-feedback" style="display: block;">{{ error }}</div>
+                    {% endfor %}
+                </div>
+            {% endfor %}
+        {% endif %}
+    </div>
+    <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+        <button type="submit" class="btn btn-primary">Salvar Ordem de Serviço</button>
+    </div>
+</form>

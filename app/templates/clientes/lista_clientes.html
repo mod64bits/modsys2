@@ -1,0 +1,146 @@
+{% extends 'base/base.html' %}
+{% load static %}
+
+
+{% block titulo_pagina %}Clientes{% endblock titulo_pagina %}
+
+{% block nome_pagina %}Clientes{% endblock nome_pagina %}
+
+{% block link_pagina %}Clientes{% endblock link_pagina %}
+
+{% block content %}
+    <section class="content">
+    <div class="modal fade" tabindex="-1" role="dialog" id="modal-default">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content"></div>
+        </div>
+    </div>
+
+<div class="modal fade" tabindex="-1" role="dialog" id="modal">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content"></div>
+        </div>
+    </div>
+        <div class="container-fluid">
+            <div class="row">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <button id="novo-cliente" type="button" class="btn btn-primary btn-block" data-toggle="modal" data-target="#modal-default"><i class="fa fa-bell"></i>  Adcionar Cliente</button>
+                        </div>
+                        <!-- /.card-header -->
+                        <div class="card-body">
+                            <table id="example1" class="table hover display table-striped" style="width:100%">
+                                <thead>
+                                <tr>
+                                    <th>Nome</th>
+                                    <th>Tipo</th>
+                                    <th>Documento</th>
+                                    <th>Email</th>
+                                    <th>telefone</th>
+                                    <th>Ação</th>
+                                </tr>
+                                </thead>
+                                <tbody>
+
+                                {% for cliente in object_list %}
+                                    <tr>
+                                        <td>{{ cliente.nome }}</td>
+                                        <td>{{ cliente.tipo }}</td>
+                                        <td>{{ cliente.documento }}</td>
+                                        <td>{{ cliente.email }}</td>
+                                        <td>{{ cliente.telefone }}</td>
+                                        <td class="project-actions text-right">
+                                            <button class="update-cliente btn btn-info btn-sm" data-form-url="{% url 'clientes:editar_cliente' cliente.pk %}">
+                                                <i class="fas fa-pencil-alt">
+                                                </i>
+                                                Edit
+                                            </button>
+                                            <button class="delete-cliente btn btn-danger btn-sm" data-form-url="{% url 'clientes:deletar_cliente' cliente.pk %}">
+                                                <i class="fas fa-trash">
+                                                </i>
+                                                Delete
+                                            </button>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+
+                                </tbody>
+                                <tfoot>
+                                <tr>
+                                    <th>Nome</th>
+                                    <th>Tipo</th>
+                                    <th>Documento</th>
+                                    <th>Email</th>
+                                    <th>telefone</th>
+                                    <th>Ação</th>
+                                </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                        <!-- /.card-body -->
+                    </div>
+                    <!-- /.card -->
+                </div>
+                <!-- /.col -->
+            </div>
+            <!-- /.row -->
+        </div>
+        <!-- /.container-fluid -->
+    </section>
+{% endblock content %}
+
+{% block scripts %}
+    <script>
+        $(function () {
+            $("#example1").DataTable({
+                "responsive": true, "lengthChange": false, "autoWidth": false,
+                "buttons": ["copy", "csv", "excel", "pdf", "print"],
+                language: {
+                    url: 'https://cdn.datatables.net/plug-ins/1.13.2/i18n/pt-BR.json'
+                },
+                scrollY: '50vh',
+            }).buttons().container().appendTo('#example1_wrapper .col-md-6:eq(0)');
+            $('#example2').DataTable({
+                "paging": true,
+                "lengthChange": false,
+                "searching": false,
+                "ordering": true,
+                "info": true,
+                "autoWidth": false,
+                "responsive": true,
+            });
+        });
+    </script>
+
+    <script type="text/javascript">
+        $(document).ready(function() {
+            $("#novo-cliente").modalForm({
+                formURL: "{% url 'clientes:novo_cliente' %}",
+                modalID: "#modal-default"
+            });
+
+            function updateClienteModalForm() {
+                $(".update-cliente").each(function () {
+                    $(this).modalForm({
+                        formURL: $(this).data("form-url"),
+                        asyncUpdate: false,
+                        modalID: "#modal-default",
+                    });
+                });
+            }
+
+            updateClienteModalForm();
+
+        function deleteClienteForm() {
+        $(".delete-cliente").each(function () {
+            $(this).modalForm({formURL: $(this).data("form-url"), isDeleteForm: true});
+
+        });
+      }
+      deleteClienteForm();
+        });
+    </script>
+{% endblock scripts %}
+
+

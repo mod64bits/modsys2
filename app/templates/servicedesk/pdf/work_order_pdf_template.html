@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Ordem de Serviço #{{ work_order.id }}</title>
+    <style>
+        @page {
+            size: a4 portrait;
+            margin: 1.5cm;
+            @frame header_frame {
+                -pdf-frame-content: header_content;
+                left: 50pt; width: 512pt; top: 20pt; height: 50pt;
+            }
+            @frame footer_frame {
+                -pdf-frame-content: footer_content;
+                left: 50pt; width: 512pt; top: 772pt; height: 20pt;
+            }
+        }
+        body {
+            font-family: "Helvetica", "Arial", sans-serif;
+            font-size: 10pt;
+            color: #333;
+        }
+        h1 {
+            text-align: center;
+            font-size: 16pt;
+            margin-bottom: 20px;
+            border-bottom: 1px solid #ccc;
+            padding-bottom: 10px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 15px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 6px;
+            text-align: left;
+            vertical-align: top;
+        }
+        th {
+            background-color: #f2f2f2;
+            font-weight: bold;
+            width: 30%; /* Ajustado para OS */
+        }
+        .description-box {
+            border: 1px solid #ddd;
+            padding: 10px;
+            background-color: #f9f9f9;
+            margin-bottom: 15px;
+            white-space: pre-wrap;
+        }
+        .footer {
+            text-align: center;
+            font-size: 8pt;
+            color: #777;
+        }
+        .header {
+            text-align: center;
+            font-size: 9pt;
+            color: #555;
+        }
+        .badge {
+            padding: 3px 6px;
+            font-size: 9pt;
+            border-radius: 4px;
+            color: white;
+        }
+        .badge-secondary { background-color: #6c757d; }
+        .badge-info { background-color: #17a2b8; }
+        .badge-warning { background-color: #ffc107; color: #212529; }
+        .badge-success { background-color: #28a745; }
+        .badge-danger { background-color: #dc3545; }
+    </style>
+</head>
+<body>
+    <div id="header_content" class="header">
+        {{ company_name|default:"Sua Empresa" }} - Relatório de Ordem de Serviço
+    </div>
+    <div id="footer_content" class="footer">
+        Página <pdf:pagenumber /> de <pdf:pagecount />
+    </div>
+
+    <h1>Detalhes da Ordem de Serviço #{{ work_order.id }}</h1>
+
+    <table>
+        <tr><th>Ticket Relacionado</th><td>#{{ work_order.ticket.id }} - {{ work_order.ticket.title }}</td></tr>
+        <tr><th>Cliente do Ticket</th><td>{{ work_order.ticket.customer.nome|default:"N/A" }}</td></tr>
+        <tr><th>Status da OS</th><td><span class="badge {% if work_order.status == 'PENDENTE' %}badge-secondary{% elif work_order.status == 'AGENDADA' %}badge-info{% elif work_order.status == 'EM_EXECUCAO' %}badge-warning{% elif work_order.status == 'CONCLUIDA' %}badge-success{% elif work_order.status == 'CANCELADA' %}badge-danger{% else %}badge-light{% endif %}">{{ work_order.get_status_display }}</span></td></tr>
+        <tr><th>Técnico Responsável</th><td>{{ work_order.assigned_technician.username|default:"Não atribuído" }}</td></tr>
+        <tr><th>Data Agendada</th><td>{{ work_order.scheduled_date|date:"d/m/Y H:i"|default:"Não agendada" }}</td></tr>
+        <tr><th>Data de Conclusão</th><td>{{ work_order.completion_date|date:"d/m/Y H:i"|default:"Não concluída" }}</td></tr>
+        <tr><th>Data de Criação da OS</th><td>{{ work_order.created_at|date:"d/m/Y H:i:s" }}</td></tr>
+        <tr><th>Última Atualização da OS</th><td>{{ work_order.updated_at|date:"d/m/Y H:i:s" }}</td></tr>
+    </table>
+
+    <h2>Descrição dos Serviços</h2>
+    <div class="description-box">
+        {{ work_order.description|linebreaksbr }}
+    </div>
+
+    {% if work_order.notes %}
+    <h2>Observações Internas</h2>
+    <div class="description-box">
+        {{ work_order.notes|linebreaksbr }}
+    </div>
+    {% endif %}
+
+</body>
+</html>

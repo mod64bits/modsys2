@@ -6,7 +6,7 @@ services:
     build:
       context: .
     ports:
-      - 8000:8000
+      - 8000:9090
     volumes:
       - ./app:/app
       - ./data/web/static:/data/web/static/

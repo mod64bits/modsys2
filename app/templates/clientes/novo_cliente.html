@@ -1,0 +1,75 @@
+{% load widget_tweaks %}
+<form method="post" action="">
+    {% csrf_token %}
+    <div class="modal-header">
+        <h4 class="modal-title">Novo Cliente</h4>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+        </button>
+    </div>
+    <div class="modal-body">
+
+        <div class="row">
+            <div class="col-sm-6">
+                <!-- text input -->
+                <div class="form-group">
+                    <label>{{ form.tipo_documento.label }}</label>
+                    {% render_field form.tipo_documento class="form-control"  %}
+                </div>
+            </div>
+            <div class="col-sm-6">
+                <div class="form-group">
+                    <label>{{ form.documento.label }}</label>
+                    {% render_field form.documento class="form-control" placeholder="Documento"  %}
+                </div>
+            </div>
+            <div class="col-sm-12">
+                <div class="form-group">
+                    <label>{{ form.nome.label }}</label>
+                    {% render_field form.nome class="form-control" placeholder="Nome"  %}
+                </div>
+            </div>
+
+            <div class="col-sm-6">
+                <div class="form-group">
+                    <label>{{ form.email.label }}</label>
+                    {% render_field form.email class="form-control" placeholder="Email"  %}
+                </div>
+            </div>
+            <div class="col-sm-6">
+                <div class="form-group">
+                    <label>{{ form.telefone.label }}</label>
+                    {% render_field form.telefone class="form-control" placeholder="Telefone"  %}
+                </div>
+            </div>
+        </div>
+
+    </div>
+    <div class="modal-footer justify-content-between">
+        <button type="button" class="btn btn-default" data-dismiss="modal">Fechar</button>
+        <button type="submit" class="btn btn-primary">Salvar</button>
+    </div>
+</form>
+
+<script>
+    $(document).ready(function(){
+        var masks = ['000.000.000-00', '00.000.000/0000-00'];
+        var docInitial = $("#id_tipo_documento").val()
+        $('#id_telefone').mask('(00) 00000-0000');
+        if (docInitial === "CPF"){
+            $('#id_documento').mask(masks[0], {reverse: true});
+        } else {
+            $('#id_documento').mask(masks[1], {reverse: true});
+        }
+        $("#id_tipo_documento").change(function(){
+            var doc = $("#id_tipo_documento").val()
+            if (doc === "CPF"){
+                $('#id_documento').mask(masks[0]);
+            }else if (doc === "CNPJ") {
+                $('#id_documento').mask(masks[1]);
+            }
+
+        });
+
+    })
+</script>

@@ -1,0 +1,62 @@
+<div class="modal-header">
+    <h5 class="modal-title">{{ detail_title|default:"Detalhes da Ordem de Serviço" }}</h5>
+    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+        <span aria-hidden="true">&times;</span>
+    </button>
+</div>
+<div class="modal-body">
+    <dl class="row">
+        <dt class="col-sm-4">ID da OS:</dt>
+        <dd class="col-sm-8">{{ work_order.id }}</dd>
+
+        <dt class="col-sm-4">Ticket Relacionado:</dt>
+        <dd class="col-sm-8">
+            <a href="#" 
+               data-dismiss="modal" 
+               data-toggle="ajax-modal" 
+               data-target="#ajaxModal" 
+               data-url="{% url 'servicedesk:ticket_detail_modal' work_order.ticket.pk %}">
+                #{{ work_order.ticket.id }} - {{ work_order.ticket.title }}
+            </a>
+        </dd>
+
+        <dt class="col-sm-4">Descrição da OS:</dt>
+        <dd class="col-sm-8" style="white-space: pre-wrap;">{{ work_order.description }}</dd>
+
+        <dt class="col-sm-4">Status:</dt>
+        <dd class="col-sm-8"><span class="badge {% if work_order.status == 'PENDENTE' %}badge-secondary{% elif work_order.status == 'AGENDADA' %}badge-info{% elif work_order.status == 'EM_EXECUCAO' %}badge-warning{% elif work_order.status == 'CONCLUIDA' %}badge-success{% elif work_order.status == 'CANCELADA' %}badge-danger{% else %}badge-light{% endif %}">{{ work_order.get_status_display }}</span></dd>
+
+        <dt class="col-sm-4">Técnico Responsável:</dt>
+        <dd class="col-sm-8">{{ work_order.assigned_technician.username|default:"Não atribuído" }}</dd>
+
+        <dt class="col-sm-4">Data Agendada:</dt>
+        <dd class="col-sm-8">{{ work_order.scheduled_date|date:"d/m/Y H:i"|default:"Não agendada" }}</dd>
+        
+        <dt class="col-sm-4">Data de Conclusão:</dt>
+        <dd class="col-sm-8">{{ work_order.completion_date|date:"d/m/Y H:i"|default:"Não concluída" }}</dd>
+
+        <dt class="col-sm-4">Observações Internas:</dt>
+        <dd class="col-sm-8" style="white-space: pre-wrap;">{{ work_order.notes|default:"Nenhuma" }}</dd>
+
+        <dt class="col-sm-4">Data de Criação da OS:</dt>
+        <dd class="col-sm-8">{{ work_order.created_at|date:"d/m/Y H:i:s" }}</dd>
+
+        <dt class="col-sm-4">Última Atualização da OS:</dt>
+        <dd class="col-sm-8">{{ work_order.updated_at|date:"d/m/Y H:i:s" }}</dd>
+    </dl>
+</div>
+<div class="modal-footer">
+    <a href="{% url 'servicedesk:work_order_pdf' work_order.pk %}" target="_blank" class="btn btn-info mr-auto">
+        <i class="fas fa-file-pdf"></i> Gerar PDF
+    </a>
+    <button type="button" class="btn btn-secondary" data-dismiss="modal">Fechar</button>
+    {% if work_order.status not in "CONCLUIDA,CANCELADA" %}
+    <button type="button" class="btn btn-warning"
+            data-dismiss="modal"
+            data-toggle="ajax-modal"
+            data-target="#ajaxModal"
+            data-url="{% url 'servicedesk:work_order_update_modal' work_order.pk %}">
+        <i class="fas fa-edit"></i> Editar OS
+    </button>
+    {% endif %}
+</div>

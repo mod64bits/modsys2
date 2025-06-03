@@ -1,0 +1,116 @@
+{% extends "base/base.html" %}
+{% load static %}
+
+{% block title %}Lista de Tickets{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'servicedesk:ticket_list' %}">Service Desk</a></li>
+{% endblock %}
+
+{% block page_title %}
+    Lista de Tickets
+    <button type="button" class="btn btn-primary btn-sm float-right" 
+            data-toggle="ajax-modal" 
+            data-target="#ajaxModal"
+            data-url="{% url 'servicedesk:ticket_create_modal' %}">
+        <i class="fas fa-plus"></i> Novo Ticket
+    </button>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">Todos os Tickets</h3>
+                <div class="card-tools">
+                    </div>
+            </div>
+            <div class="card-body table-responsive p-0">
+                {% if tickets %}
+                <table class="table table-hover text-nowrap">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Título</th>
+                            <th>Status</th>
+                            <th>Prioridade</th>
+                            <th>Criado Por</th>
+                            <th>Atribuído Para</th>
+                            <th>Criado Em</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for ticket in tickets %}
+                        <tr>
+                            <td>{{ ticket.id }}</td>
+                            <td>
+                                <a href="#" 
+                                   data-toggle="ajax-modal" 
+                                   data-target="#ajaxModal" 
+                                   data-url="{% url 'servicedesk:ticket_detail_modal' ticket.pk %}">
+                                    {{ ticket.title|truncatechars:50 }}
+                                </a>
+                            </td>
+                            <td><span class="badge {% if ticket.status == 'ABERTO' %}badge-danger{% elif ticket.status == 'EM_ANDAMENTO' %}badge-warning{% elif ticket.status == 'RESOLVIDO' %}badge-success{% elif ticket.status == 'FECHADO' %}badge-secondary{% else %}badge-info{% endif %}">{{ ticket.get_status_display }}</span></td>
+                            <td><span class="badge {% if ticket.priority == 'ALTA' or ticket.priority == 'URGENTE' %}badge-danger{% elif ticket.priority == 'MEDIA' %}badge-warning{% else %}badge-primary{% endif %}">{{ ticket.get_priority_display }}</span></td>
+                            <td>{{ ticket.created_by.username|default:"N/A" }}</td>
+                            <td>{{ ticket.assigned_to.username|default:"Não atribuído" }}</td>
+                            <td>{{ ticket.created_at|date:"d/m/Y H:i" }}</td>
+                            <td>
+                                <button type="button" class="btn btn-xs btn-info" 
+                                        data-toggle="ajax-modal" 
+                                        data-target="#ajaxModal"
+                                        data-url="{% url 'servicedesk:ticket_detail_modal' ticket.pk %}"
+                                        title="Ver Detalhes">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                                <button type="button" class="btn btn-xs btn-warning" 
+                                        data-toggle="ajax-modal" 
+                                        data-target="#ajaxModal"
+                                        data-url="{% url 'servicedesk:ticket_update_modal' ticket.pk %}"
+                                        title="Editar Ticket">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button type="button" class="btn btn-xs btn-danger"
+                                        data-toggle="ajax-modal"
+                                        data-target="#ajaxModal"
+                                        data-url="{% url 'servicedesk:ticket_delete_modal' ticket.pk %}"
+                                        title="Excluir Ticket">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% else %}
+                <div class="p-3 text-center">
+                    <p>Nenhum ticket encontrado.</p>
+                    <button type="button" class="btn btn-primary" 
+                            data-toggle="ajax-modal" 
+                            data-target="#ajaxModal"
+                            data-url="{% url 'servicedesk:ticket_create_modal' %}">
+                        <i class="fas fa-plus"></i> Criar Primeiro Ticket
+                    </button>
+                </div>
+                {% endif %}
+            </div>
+            <div class="card-footer clearfix">
+                </div>
+        </div>
+        </div>
+</div>
+
+{% endblock %}
+
+{% block extrajs %}
+<script>
+// Script JS específico para esta página, se necessário
+// Por exemplo, para inicializar DataTables ou outros plugins
+// $(function () {
+//   $("#ticketsTable").DataTable(); // Se você adicionar um ID à tabela e usar DataTables
+// });
+</script>
+{% endblock %}

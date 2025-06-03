@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Ticket #{{ ticket.id }}</title>
+    <style>
+        @page {
+            size: a4 portrait;
+            margin: 1.5cm;
+            @frame header_frame {
+                -pdf-frame-content: header_content;
+                left: 50pt; width: 512pt; top: 20pt; height: 50pt;
+            }
+            @frame footer_frame {
+                -pdf-frame-content: footer_content;
+                left: 50pt; width: 512pt; top: 772pt; height: 20pt;
+            }
+        }
+        body {
+            font-family: "Helvetica", "Arial", sans-serif;
+            font-size: 10pt;
+            color: #333;
+        }
+        h1 {
+            text-align: center;
+            font-size: 16pt;
+            margin-bottom: 20px;
+            border-bottom: 1px solid #ccc;
+            padding-bottom: 10px;
+        }
+        h2 {
+            font-size: 12pt;
+            margin-top: 20px;
+            margin-bottom: 10px;
+            border-bottom: 1px dotted #eee;
+            padding-bottom: 5px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 15px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 6px;
+            text-align: left;
+            vertical-align: top;
+        }
+        th {
+            background-color: #f2f2f2;
+            font-weight: bold;
+            width: 25%;
+        }
+        .description-box {
+            border: 1px solid #ddd;
+            padding: 10px;
+            background-color: #f9f9f9;
+            margin-bottom: 15px;
+            white-space: pre-wrap; /* Mantém quebras de linha e espaços */
+        }
+        .footer {
+            text-align: center;
+            font-size: 8pt;
+            color: #777;
+        }
+         .header {
+            text-align: center;
+            font-size: 9pt;
+            color: #555;
+        }
+        .badge {
+            padding: 3px 6px;
+            font-size: 9pt;
+            border-radius: 4px;
+            color: white;
+        }
+        .badge-danger { background-color: #dc3545; }
+        .badge-warning { background-color: #ffc107; color: #212529;}
+        .badge-success { background-color: #28a745; }
+        .badge-secondary { background-color: #6c757d; }
+        .badge-info { background-color: #17a2b8; }
+        .badge-primary { background-color: #007bff; }
+    </style>
+</head>
+<body>
+    <div id="header_content" class="header">
+        {{ company_name|default:"Sua Empresa" }} - Relatório de Ticket
+    </div>
+    <div id="footer_content" class="footer">
+        Página <pdf:pagenumber /> de <pdf:pagecount />
+    </div>
+
+    <h1>Detalhes do Ticket #{{ ticket.id }}</h1>
+
+    <table>
+        <tr><th>Título</th><td>{{ ticket.title }}</td></tr>
+        <tr><th>Cliente</th><td>{{ ticket.customer.nome|default:"N/A" }}</td></tr>
+        <tr><th>Status</th><td><span class="badge {% if ticket.status == 'ABERTO' %}badge-danger{% elif ticket.status == 'EM_ANDAMENTO' %}badge-warning{% elif ticket.status == 'RESOLVIDO' %}badge-success{% elif ticket.status == 'FECHADO' %}badge-secondary{% else %}badge-info{% endif %}">{{ ticket.get_status_display }}</span></td></tr>
+        <tr><th>Prioridade</th><td><span class="badge {% if ticket.priority == 'ALTA' or ticket.priority == 'URGENTE' %}badge-danger{% elif ticket.priority == 'MEDIA' %}badge-warning{% else %}badge-primary{% endif %}">{{ ticket.get_priority_display }}</span></td></tr>
+        <tr><th>Criado Por</th><td>{{ ticket.created_by.username|default:"N/A" }}</td></tr>
+        <tr><th>Atribuído Para</th><td>{{ ticket.assigned_to.username|default:"Não atribuído" }}</td></tr>
+        <tr><th>Data de Criação</th><td>{{ ticket.created_at|date:"d/m/Y H:i:s" }}</td></tr>
+        <tr><th>Última Atualização</th><td>{{ ticket.updated_at|date:"d/m/Y H:i:s" }}</td></tr>
+        {% if ticket.resolution_details %}
+        <tr><th>Detalhes da Resolução</th><td>{{ ticket.resolution_details|linebreaksbr }}</td></tr>
+        {% endif %}
+        {% if ticket.closed_at %}
+        <tr><th>Data de Fechamento</th><td>{{ ticket.closed_at|date:"d/m/Y H:i:s" }}</td></tr>
+        {% endif %}
+    </table>
+
+    <h2>Descrição</h2>
+    <div class="description-box">
+        {{ ticket.description|linebreaksbr }}
+    </div>
+
+    {% if work_orders %}
+    <h2>Ordens de Serviço Relacionadas ({{ work_orders.count }})</h2>
+    <table>
+        <thead>
+            <tr>
+                <td style="background-color: #f8f9fa; font-weight:bold;">ID OS</td>
+                <td style="background-color: #f8f9fa; font-weight:bold;">Descrição</td>
+                <td style="background-color: #f8f9fa; font-weight:bold;">Status</td>
+                <td style="background-color: #f8f9fa; font-weight:bold;">Técnico</td>
+                <td style="background-color: #f8f9fa; font-weight:bold;">Conclusão</td>
+            </tr>
+        </thead>
+        <tbody>
+            {% for wo in work_orders %}
+            <tr>
+                <td>#{{ wo.id }}</td>
+                <td>{{ wo.description|truncatechars:50 }}</td>
+                <td>{{ wo.get_status_display }}</td>
+                <td>{{ wo.assigned_technician.username|default:"N/A" }}</td>
+                <td>{{ wo.completion_date|date:"d/m/Y"|default:"-" }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% endif %}
+
+</body>
+</html>

@@ -1,0 +1,133 @@
+{% load crispy_forms_tags %} <div class="modal-header">
+    <h5 class="modal-title" id="ajaxModalLabel">{{ form_title|default:"Formulário de Cliente" }}</h5>
+    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+        <span aria-hidden="true">&times;</span>
+    </button>
+</div>
+<form method="post" action="{{ form_action_url }}" class="ajax-form" id="customerModalForm">
+    {% csrf_token %}
+    <div class="modal-body">
+        <div class="form-errors-container">
+            {% if form.non_field_errors %}
+                <div class="alert alert-danger">
+                    {% for error in form.non_field_errors %}
+                        <p>{{ error }}</p>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        </div>
+
+        {% if form.media %}{{ form.media }}{% endif %}
+
+        {% if crispy_forms_tags %}
+             {{ form|crispy }}
+        {% else %}
+            <div class="row">
+                <div class="col-md-6">
+                    {{ form.nome.label_tag }} {{ form.nome }} {% for error in form.nome.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+                </div>
+                <div class="col-md-3">
+                    {{ form.tipo_documento.label_tag }} {{ form.tipo_documento }} {% for error in form.tipo_documento.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+                </div>
+                <div class="col-md-3">
+                    {{ form.documento.label_tag }} {{ form.documento }} {% for error in form.documento.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+                </div>
+            </div>
+            <div class="row mt-2">
+                <div class="col-md-6">
+                    {{ form.email.label_tag }} {{ form.email }} {% for error in form.email.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+                </div>
+                <div class="col-md-3">
+                    {{ form.telefone.label_tag }} {{ form.telefone }} {% for error in form.telefone.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+                </div>
+                <div class="col-md-3">
+                    {{ form.tipo_cliente.label_tag }} {{ form.tipo_cliente }} {% for error in form.tipo_cliente.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+                </div>
+            </div>
+            <hr>
+            <h6>Endereço</h6>
+            <div class="row mt-2">
+                <div class="col-md-8">
+                    {{ form.endereco_logradouro.label_tag }} {{ form.endereco_logradouro }} {% for error in form.endereco_logradouro.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+                </div>
+                <div class="col-md-4">
+                    {{ form.endereco_numero.label_tag }} {{ form.endereco_numero }} {% for error in form.endereco_numero.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+                </div>
+            </div>
+            <div class="row mt-2">
+                <div class="col-md-6">
+                    {{ form.endereco_complemento.label_tag }} {{ form.endereco_complemento }} {% for error in form.endereco_complemento.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+                </div>
+                <div class="col-md-6">
+                    {{ form.endereco_bairro.label_tag }} {{ form.endereco_bairro }} {% for error in form.endereco_bairro.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+                </div>
+            </div>
+            <div class="row mt-2">
+                <div class="col-md-5">
+                    {{ form.endereco_cidade.label_tag }} {{ form.endereco_cidade }} {% for error in form.endereco_cidade.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+                </div>
+                <div class="col-md-3">
+                    {{ form.endereco_estado.label_tag }} {{ form.endereco_estado }} {% for error in form.endereco_estado.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+                </div>
+                <div class="col-md-4">
+                    {{ form.endereco_cep.label_tag }} {{ form.endereco_cep }} {% for error in form.endereco_cep.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+                </div>
+            </div>
+            <hr>
+            <div class="form-group">
+                <div class="form-check">
+                    {{ form.criar_usuario_sistema }}
+                    <label class="form-check-label" for="{{ form.criar_usuario_sistema.id_for_label }}">
+                        {{ form.criar_usuario_sistema.label }}
+                    </label>
+                    {% for error in field.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+                </div>
+            </div>
+        {% endif %}
+    </div>
+    <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+        <button type="submit" class="btn btn-primary">Salvar Cliente</button>
+    </div>
+</form>
+
+<script>
+$(document).ready(function(){
+    // Se você adicionar o jQuery Mask Plugin, descomente e ajuste as máscaras:
+    // $('#{{ form.documento.id_for_label }}').on('focusout', function(){
+    //     var tipoDoc = $('#{{ form.tipo_documento.id_for_label }}').val();
+    //     var el = $(this);
+    //     el.unmask();
+    //     if(tipoDoc === 'CPF'){
+    //         el.mask("000.000.000-00", {reverse: false});
+    //     } else if(tipoDoc === 'CNPJ'){
+    //         el.mask("00.000.000/0000-00", {reverse: false});
+    //     }
+    // }).trigger('focusout'); // Aplica a máscara inicial
+
+    // $('#{{ form.tipo_documento.id_for_label }}').on('change', function(){
+    //     $('#{{ form.documento.id_for_label }}').trigger('focusout');
+    // });
+
+    // $('#{{ form.telefone.id_for_label }}').mask('(00) 00000-0000');
+    // $('#{{ form.endereco_cep.id_for_label }}').mask('00000-000');
+
+    // Lógica para buscar CEP (exemplo com ViaCEP)
+    // $('#{{ form.endereco_cep.id_for_label }}').on('blur', function() {
+    //     var cep = $(this).val().replace(/\D/g, '');
+    //     if (cep.length == 8) {
+    //         $.getJSON("https://viacep.com.br/ws/" + cep + "/json/?callback=?", function(dados) {
+    //             if (!("erro" in dados)) {
+    //                 $("#{{ form.endereco_logradouro.id_for_label }}").val(dados.logradouro);
+    //                 $("#{{ form.endereco_bairro.id_for_label }}").val(dados.bairro);
+    //                 $("#{{ form.endereco_cidade.id_for_label }}").val(dados.localidade);
+    //                 $("#{{ form.endereco_estado.id_for_label }}").val(dados.uf);
+    //                 $("#{{ form.endereco_numero.id_for_label }}").focus();
+    //             } else {
+    //                 alert("CEP não encontrado.");
+    //             }
+    //         });
+    //     }
+    // });
+});
+</script>

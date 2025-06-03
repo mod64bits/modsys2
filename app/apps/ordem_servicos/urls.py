@@ -1,12 +1,17 @@
-from django.urls import path, include
-from rest_framework.routers import DefaultRouter
-from .views import TicketViewSet, AtendimentoViewSet, MensagemAtendimentoViewSet
+from django.urls import path
+from . import views
+from .views import MensagemAtendimentoListView, MensagemAtendimentoCreateView
 
-router = DefaultRouter()
-router.register(r'tickets', TicketViewSet)
-router.register(r'atendimentos', AtendimentoViewSet)
-router.register(r'mensagens', MensagemAtendimentoViewSet)
-
+app_name = 'ordens'
 urlpatterns = [
-    path('', include(router.urls)),
-] 
+    path('', views.HomeOrdemDeServicosView.as_view(), name='ticket_home'),
+    path('tikets/', views.TicketListView.as_view(), name='ticket_lista'),
+    path('tickets/novo/<uuid:cliente_id>/', views.NovoTicketView.as_view(), name='ticket_create'),
+    path('tickets/<uuid:pk>/', views.TicketDetailView.as_view(), name='ticket_detail'),
+    path('atendimento/<int:atendimento_id>/mensagens/', 
+         MensagemAtendimentoListView.as_view(), 
+         name='mensagem-atendimento-list'),
+    path('atendimento/<int:atendimento_id>/mensagens/nova/', 
+         MensagemAtendimentoCreateView.as_view(), 
+         name='mensagem-atendimento-create'),
+]

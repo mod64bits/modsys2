@@ -15,7 +15,8 @@ from pathlib import Path
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 DATA_DIR = BASE_DIR.parent / 'data' / 'web'
-
+print(f"debug {DATA_DIR}")
+print(f"debug {BASE_DIR}")
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
@@ -25,12 +26,12 @@ SECRET_KEY = os.getenv('SECRET_KEY', 'change-me')
 #SECRET_KEY = os.environ.get("SECRET_KEY")
 
 # SECURITY WARNING: don't run with debug turned on in production!
-#DEBUG = True
-DEBUG = bool(int(os.getenv('DEBUG', 0)))
+DEBUG = True
+#DEBUG = bool(int(os.getenv('DEBUG', 1)))
 
 # ALLOWED_HOSTS = []
 ALLOWED_HOSTS = [
-    h.strip() for h in os.getenv('ALLOWED_HOSTS', '').split(',')
+    h.strip() for h in os.getenv('ALLOWED_HOSTS', '127.0.0.1').split(',')
     if h.strip()
 ]
 
@@ -44,9 +45,17 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    # Libes
+    'bootstrap_modal_forms',
+    'widget_tweaks',
+    'crispy_forms',
     # APPS
     'apps.account',
     'apps.base',
+    #'apps.ordem_servicos',
+    'apps.servicedesk',
+    'apps.customers',
+    'apps.reports'
 ]
 
 MIDDLEWARE = [
@@ -86,10 +95,10 @@ WSGI_APPLICATION = 'modsys.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': os.getenv('DB_ENGINE', 'django.db.backends.postgresql'),
-        'NAME': os.getenv('POSTGRES_DB', 'modsys_dois'),
+        'NAME': os.getenv('POSTGRES_DB', 'mod_sys_dev'),
         'USER': os.getenv('POSTGRES_USER', 'postgres'),
         'PASSWORD': os.getenv('POSTGRES_PASSWORD', 'mod64'),
-        'HOST': os.getenv('POSTGRES_HOST', '172.16.20.4'),
+        'HOST': os.getenv('POSTGRES_HOST', '172.16.20.7'),
         'PORT': os.getenv('POSTGRES_PORT', '5432'),
     }
 }
@@ -130,6 +139,10 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
 STATIC_URL = 'static/'
+STATICFILES_DIRS = [
+    os.path.join(BASE_DIR, "static"),
+
+]
 STATIC_ROOT = DATA_DIR / 'static'
 
 MEDIA_URL = 'media/'
@@ -145,3 +158,7 @@ AUTHENTICATION_BACKENDS = (
     'django.contrib.auth.backends.ModelBackend',
     'apps.account.backends.ModelBackend',
 )
+
+LOGIN_URL = 'login' # O nome da URL que usaremos para a página de login
+LOGIN_REDIRECT_URL = 'servicedesk:ticket_list' # Para onde ir após o login bem-sucedido
+LOGOUT_REDIRECT_URL = 'login' # Para onde ir após o logout

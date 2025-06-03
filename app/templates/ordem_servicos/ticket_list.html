@@ -1,0 +1,271 @@
+{% extends "base/base.html" %}
+{% load static %}
+{% block titulo_pagina %}Tickets{% endblock %}
+{% block nome_pagina %}Tickets{% endblock %}
+
+{% block content %}
+
+    <div class="content">
+      <div class="modal fade" role="dialog" id="modal-default">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content"></div>
+        </div>
+    </div>
+
+    <div class="modal fade"  role="dialog" id="modal">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content"></div>
+        </div>
+    </div>
+      <div class="container-fluid">
+        <div class="row">
+          <div class="col-lg-6">
+            <div class="card">
+              <div class="card-header border-0">
+                <div class="d-flex justify-content-between">
+                  <h3 class="card-title">Online Store Visitors</h3>
+                  <a href="javascript:void(0);">View Report</a>
+                </div>
+              </div>
+              <div class="card-body">
+                <div class="d-flex">
+                  <p class="d-flex flex-column">
+                    <span class="text-bold text-lg">820</span>
+                    <span>Visitors Over Time</span>
+                  </p>
+                  <p class="ml-auto d-flex flex-column text-right">
+                    <span class="text-success">
+                      <i class="fas fa-arrow-up"></i> 12.5%
+                    </span>
+                    <span class="text-muted">Since last week</span>
+                  </p>
+                </div>
+                <!-- /.d-flex -->
+
+                <div class="position-relative mb-4">
+                  <canvas id="visitors-chart" height="200"></canvas>
+                </div>
+
+                <div class="d-flex flex-row justify-content-end">
+                  <span class="mr-2">
+                    <i class="fas fa-square text-primary"></i> This Week
+                  </span>
+
+                  <span>
+                    <i class="fas fa-square text-gray"></i> Last Week
+                  </span>
+                </div>
+              </div>
+            </div>
+            <!-- /.card -->
+             <div class="card">
+              <div class="card-header">
+                <h3 class="card-title">DataTable with default features</h3>
+              </div>
+              <!-- /.card-header -->
+              <div class="card-body">
+                <table id="tickets" class="table table-bordered table-striped">
+                  <thead>
+                  <tr>
+                    <th>Cliente</th>
+                    <th>Solicitante</th>
+                    <th>Status</th>
+                    <th>Data</th>
+                    <th>Ver</th>
+                  </tr>
+                  </thead>
+                  <tbody>
+
+                  {% for ticket in object_list %}
+                  <tr>
+                    <td>
+                      {{ ticket.cliente.nome }}
+                    </td>
+                    <td>{{ ticket.solicitante.nome }}</td>
+                    <td>{{ ticket.status }}</td>
+                    <td>{{ ticket.created }}</td>
+                    <td>
+                      <a href="{% url 'ordens:ticket_detail' ticket.pk %}" class="text-muted">
+                        <i class="fas fa-search"></i>
+                      </a>
+                    </td>
+                  </tr>
+                  {% endfor %}
+                  </tbody>
+                  <tfoot>
+                  <tr>
+                     <th>Cliente</th>
+                    <th>Solicitante</th>
+                    <th>Status</th>
+                    <th>Data</th>
+                    <th>Ver</th>
+
+                  </tr>
+                  </tfoot>
+                </table>
+              </div>
+              <!-- /.card-body -->
+            </div>
+
+            <!-- /.card -->
+          </div>
+          <!-- /.col-md-6 -->
+          <div class="col-lg-6">
+
+     <div class="card">
+              <div class="card-header">
+                <h3 class="card-title">DataTable with default features</h3>
+              </div>
+              <!-- /.card-header -->
+              <div class="card-body">
+                <table id="clientes" class="table table-bordered table-striped">
+                  <thead>
+                  <tr>
+                    <th>Cliente</th>
+                    <th>Documento</th>
+                    <th>Ação</th>
+                  </tr>
+                  </thead>
+                  <tbody>
+
+                  {% for cliente in clientes %}
+                  <tr>
+                       <td>{{ cliente.nome }}</td>
+                    <td>{{ cliente.documento|default:"Sem Documento Cadastrado" }}</td>
+                    <td>
+                      <button class="abrir-ticket btn btn-info btn-sm" data-form-url="{% url 'ordens:ticket_create' cliente.pk %}">
+                        <i class="fas fa-pencil-alt">
+                        </i>
+                        Abrir Ticket
+                    </button>
+                    </td>
+                  </tr>
+                  {% endfor %}
+                  </tbody>
+                  <tfoot>
+                  <tr>
+                     <th>Cliente</th>
+                    <th>Documento</th>
+                    <th>Ação</th>
+                  </tr>
+                  </tfoot>
+                </table>
+              </div>
+              <!-- /.card-body -->
+            </div>
+
+            <div class="card">
+              <div class="card-header border-0">
+                <h3 class="card-title">Online Store Overview</h3>
+                <div class="card-tools">
+                  <a href="#" class="btn btn-sm btn-tool">
+                    <i class="fas fa-download"></i>
+                  </a>
+                  <a href="#" class="btn btn-sm btn-tool">
+                    <i class="fas fa-bars"></i>
+                  </a>
+                </div>
+              </div>
+              <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center border-bottom mb-3">
+                  <p class="text-success text-xl">
+                    <i class="ion ion-ios-refresh-empty"></i>
+                  </p>
+                  <p class="d-flex flex-column text-right">
+                    <span class="font-weight-bold">
+                      <i class="ion ion-android-arrow-up text-success"></i> 12%
+                    </span>
+                    <span class="text-muted">CONVERSION RATE</span>
+                  </p>
+                </div>
+                <!-- /.d-flex -->
+                <div class="d-flex justify-content-between align-items-center border-bottom mb-3">
+                  <p class="text-warning text-xl">
+                    <i class="ion ion-ios-cart-outline"></i>
+                  </p>
+                  <p class="d-flex flex-column text-right">
+                    <span class="font-weight-bold">
+                      <i class="ion ion-android-arrow-up text-warning"></i> 0.8%
+                    </span>
+                    <span class="text-muted">SALES RATE</span>
+                  </p>
+                </div>
+                <!-- /.d-flex -->
+                <div class="d-flex justify-content-between align-items-center mb-0">
+                  <p class="text-danger text-xl">
+                    <i class="ion ion-ios-people-outline"></i>
+                  </p>
+                  <p class="d-flex flex-column text-right">
+                    <span class="font-weight-bold">
+                      <i class="ion ion-android-arrow-down text-danger"></i> 1%
+                    </span>
+                    <span class="text-muted">REGISTRATION RATE</span>
+                  </p>
+                </div>
+                <!-- /.d-flex -->
+              </div>
+            </div>
+          </div>
+          <!-- /.col-md-6 -->
+        </div>
+        <!-- /.row -->
+      </div>
+      <!-- /.container-fluid -->
+    </div>
+{% endblock content %}
+
+
+
+{% block scripts %}
+<script>
+        $(function () {
+            $("#clientes").DataTable({
+                "responsive": true, "lengthChange": false, "autoWidth": false,
+                language: {
+                    url: 'https://cdn.datatables.net/plug-ins/1.13.2/i18n/pt-BR.json'
+                },
+                paging: false,
+                scrollCollapse: true,
+                scrollY: '50vh'
+            })
+        });
+    </script>
+
+    <script>
+        $(function () {
+            $("#tickets").DataTable({
+                "responsive": true, "lengthChange": false, "autoWidth": false,
+                language: {
+                    url: 'https://cdn.datatables.net/plug-ins/1.13.2/i18n/pt-BR.json'
+                },
+                paging: false,
+                scrollCollapse: true,
+                scrollY: '50vh'
+            })
+        });
+    </script>
+
+<script src="{% static 'js/jquery.bootstrap.modal.forms.js' %}"></script>
+<!-- You can alternatively load the minified version -->
+<script src="{% static 'js/jquery.bootstrap.modal.forms.min.js' %}"></script>
+
+<script type="text/javascript">
+  $(document).ready(function() {
+      
+      function updateClienteModalForm() {
+          $(".abrir-ticket").each(function () {
+              $(this).modalForm({
+                  formURL: $(this).data("form-url"),
+                  asyncUpdate: false,
+                  modalID: "#modal-default",
+              });
+          });
+      }
+
+      updateClienteModalForm();
+
+  
+  });
+</script>
+
+{% endblock scripts %}

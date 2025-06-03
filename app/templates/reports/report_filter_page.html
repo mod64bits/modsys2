@@ -1,0 +1,207 @@
+{% extends "base/base.html" %}
+{% load static %}
+{% load crispy_forms_tags %} {% block title %}Relatórios Filtrados{% endblock %}
+
+{% block page_title %}Relatórios Filtrados{% endblock %}
+
+{% block extrastyles %}
+{{ form.media.css }}
+<style>
+    .select2-container--bootstrap4 .select2-selection--single {
+        height: calc(2.25rem + 2px) !important; /* Ajuste de altura para Select2 com tema Bootstrap 4 */
+    }
+    .form-check {
+        padding-left: 0; /* Ajuste para RadioSelect */
+    }
+    .form-check-input {
+        margin-left: 0.25rem;
+        position: static; /* Para RadioSelect funcionar bem com labels */
+    }
+    .form-check-label {
+        margin-left: 1.5rem; /* Espaço para o input radio */
+        margin-right: 1rem;
+    }
+</style>
+{% endblock %}
+
+
+{% block content %}
+<div class="card card-primary card-outline">
+    <div class="card-header">
+        <h3 class="card-title">Filtros do Relatório</h3>
+    </div>
+    <div class="card-body">
+        <form method="get" action="{% url 'reports:report_filter_page' %}" id="filterForm">
+            <div class="row">
+                <div class="col-md-4 form-group">
+                    {{ form.customer.label_tag }}
+                    {{ form.customer }}
+                    {% for error in form.customer.errors %}<small class="text-danger">{{ error }}</small>{% endfor %}
+                </div>
+                <div class="col-md-3 form-group">
+                    {{ form.start_date.label_tag }}
+                    {{ form.start_date }}
+                    {% for error in form.start_date.errors %}<small class="text-danger">{{ error }}</small>{% endfor %}
+                </div>
+                <div class="col-md-3 form-group">
+                    {{ form.end_date.label_tag }}
+                    {{ form.end_date }}
+                    {% for error in form.end_date.errors %}<small class="text-danger">{{ error }}</small>{% endfor %}
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-12 form-group">
+                    {{ form.content_type.label_tag }}
+                    <div>
+                    {% for radio in form.content_type %}
+                        <div class="form-check form-check-inline">
+                            {{ radio.tag }}
+                            <label class="form-check-label" for="{{ radio.id_for_label }}">{{ radio.choice_label }}</label>
+                        </div>
+                    {% endfor %}
+                    </div>
+                    {% for error in form.content_type.errors %}<small class="text-danger">{{ error }}</small>{% endfor %}
+                </div>
+            </div>
+             {% if form.non_field_errors %}
+                <div class="alert alert-danger">
+                    {% for error in form.non_field_errors %}
+                        {{ error }}
+                    {% endfor %}
+                </div>
+            {% endif %}
+            <button type="submit" class="btn btn-primary"><i class="fas fa-filter"></i> Aplicar Filtros</button>
+            {% if show_results %}
+                <a href="{% url 'reports:generate_filtered_pdf' %}?{{ request.GET.urlencode }}" target="_blank" class="btn btn-info">
+                    <i class="fas fa-file-pdf"></i> Gerar PDF do Relatório
+                </a>
+            {% endif %}
+        </form>
+    </div>
+</div>
+
+{% if show_results %}
+    {% if form.cleaned_data.content_type == 'all' or form.cleaned_data.content_type == 'tickets_only' %}
+    <div class="card mt-4">
+        <div class="card-header">
+            <h3 class="card-title">Tickets Encontrados ({{ tickets_results.count }})</h3>
+        </div>
+        <div class="card-body table-responsive p-0">
+            {% if tickets_results %}
+            <table class="table table-sm table-hover">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Título</th>
+                        <th>Cliente</th>
+                        <th>Status</th>
+                        <th>Prioridade</th>
+                        <th>Criado Em</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for ticket in tickets_results %}
+                    <tr>
+                        <td>#{{ ticket.id }}</td>
+                        <td>
+                            <a href="#" data-toggle="ajax-modal" data-target="#ajaxModal" data-url="{% url 'servicedesk:ticket_detail_modal' ticket.pk %}">
+                                {{ ticket.title|truncatechars:50 }}
+                            </a>
+                        </td>
+                        <td>{{ ticket.customer.nome|default:"N/A" }}</td>
+                        <td>{{ ticket.get_status_display }}</td>
+                        <td>{{ ticket.get_priority_display }}</td>
+                        <td>{{ ticket.created_at|date:"d/m/Y H:i" }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <p class="p-3">Nenhum ticket encontrado para os filtros aplicados.</p>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+
+    {% if form.cleaned_data.content_type == 'all' or form.cleaned_data.content_type == 'work_orders_only' %}
+    <div class="card mt-4">
+        <div class="card-header">
+            <h3 class="card-title">Ordens de Serviço Encontradas ({{ work_orders_results.count }})</h3>
+        </div>
+        <div class="card-body table-responsive p-0">
+            {% if work_orders_results %}
+            <table class="table table-sm table-hover">
+                <thead>
+                    <tr>
+                        <th>ID OS</th>
+                        <th>Ticket</th>
+                        <th>Cliente</th>
+                        <th>Descrição</th>
+                        <th>Status</th>
+                        <th>Criado Em</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for wo in work_orders_results %}
+                    <tr>
+                        <td>#{{ wo.id }}</td>
+                        <td>
+                             <a href="#" data-toggle="ajax-modal" data-target="#ajaxModal" data-url="{% url 'servicedesk:ticket_detail_modal' wo.ticket.pk %}">
+                                #{{ wo.ticket.id }}
+                            </a>
+                        </td>
+                        <td>{{ wo.ticket.customer.nome|default:"N/A" }}</td>
+                        <td>
+                            <a href="#" data-toggle="ajax-modal" data-target="#ajaxModal" data-url="{% url 'servicedesk:work_order_detail_modal' wo.pk %}">
+                                {{ wo.description|truncatechars:50 }}
+                            </a>
+                        </td>
+                        <td>{{ wo.get_status_display }}</td>
+                        <td>{{ wo.created_at|date:"d/m/Y H:i" }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <p class="p-3">Nenhuma ordem de serviço encontrada para os filtros aplicados.</p>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+{% elif request.GET %} <div class="alert alert-info mt-3">Nenhum resultado encontrado para os filtros aplicados ou os filtros são inválidos.</div>
+{% endif %}
+
+{% endblock %}
+
+{% block extrajs %}
+{{ form.media.js }}
+<script>
+$(document).ready(function() {
+    // Exemplo de inicialização do Select2 (se você decidir usá-lo)
+    // $('.select2-filter').select2({
+    //     theme: 'bootstrap4',
+    //     placeholder: "Selecione um cliente",
+    //     allowClear: true
+    // });
+
+    // Lógica para manter os filtros no formulário após a submissão GET
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.has('customer')) {
+        $('#{{ form.customer.id_for_label }}').val(urlParams.get('customer'));
+    }
+    if (urlParams.has('start_date')) {
+        $('#{{ form.start_date.id_for_label }}').val(urlParams.get('start_date'));
+    }
+    if (urlParams.has('end_date')) {
+        $('#{{ form.end_date.id_for_label }}').val(urlParams.get('end_date'));
+    }
+    if (urlParams.has('content_type')) {
+        $('input[name="content_type"][value="' + urlParams.get('content_type') + '"]').prop('checked', true);
+    }
+    // Se estiver usando Select2, pode precisar de .trigger('change') após definir o valor
+    // if (urlParams.has('customer') && $.fn.select2) {
+    //     $('#{{ form.customer.id_for_label }}').val(urlParams.get('customer')).trigger('change');
+    // }
+});
+</script>
+{% endblock %}

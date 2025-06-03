@@ -1,0 +1,327 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Service Desk App{% endblock %} | AdminLTE 3</title>
+
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700&display=fallback">
+  <link rel="stylesheet" href="{% static 'adminlte/plugins/fontawesome-free/css/all.min.css' %}">
+  <link rel="stylesheet" href="{% static 'adminlte/dist/css/adminlte.min.css' %}">
+  {% block extrastyles %}{% endblock %}
+  <style>
+    .loading-modal-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.5);
+        z-index: 10000;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+    .loading-modal-spinner i {
+        font-size: 3rem;
+        color: white;
+    }
+    .nav-tabs .nav-link.active {
+        border-bottom: 2px solid #007bff;
+    }
+  </style>
+</head>
+<body class="hold-transition sidebar-mini">
+<div class="wrapper">
+
+  <nav class="main-header navbar navbar-expand navbar-white navbar-light">
+    <ul class="navbar-nav">
+      <li class="nav-item">
+        <a class="nav-link" data-widget="pushmenu" href="#" role="button"><i class="fas fa-bars"></i></a>
+      </li>
+      <li class="nav-item d-none d-sm-inline-block">
+        <a href="{% if user.is_authenticated %}{% url 'servicedesk:ticket_list' %}{% else %}{% url 'login' %}{% endif %}" class="nav-link">Home</a>
+      </li>
+      </ul>
+
+    <ul class="navbar-nav ml-auto">
+      {% if user.is_authenticated %}
+      <li class="nav-item dropdown">
+        <a class="nav-link" data-toggle="dropdown" href="#">
+          <i class="far fa-user"></i> {{ user.username }}
+        </a>
+        <div class="dropdown-menu dropdown-menu-lg dropdown-menu-right">
+          <span class="dropdown-item dropdown-header">Opções do Usuário</span>
+          <div class="dropdown-divider"></div>
+          <form method="post" action="{% url 'logout' %}" id="logoutForm" style="display: none;">{% csrf_token %}</form>
+          <a href="#" class="dropdown-item" onclick="event.preventDefault(); document.getElementById('logoutForm').submit();">
+            <i class="fas fa-sign-out-alt mr-2"></i> Sair
+          </a>
+        </div>
+      </li>
+      {% else %}
+      <li class="nav-item">
+        <a class="nav-link" href="{% url 'login' %}">
+          <i class="fas fa-sign-in-alt"></i> Entrar
+        </a>
+      </li>
+      {% endif %}
+      <li class="nav-item">
+        <a class="nav-link" data-widget="fullscreen" href="#" role="button">
+          <i class="fas fa-expand-arrows-alt"></i>
+        </a>
+      </li>
+    </ul>
+  </nav>
+  <aside class="main-sidebar sidebar-dark-primary elevation-4">
+    <a href="{% if user.is_authenticated %}{% url 'servicedesk:ticket_list' %}{% else %}{% url 'login' %}{% endif %}" class="brand-link">
+      <img src="{% static 'adminlte/dist/img/AdminLTELogo.png' %}" alt="AdminLTE Logo" class="brand-image img-circle elevation-3" style="opacity: .8">
+      <span class="brand-text font-weight-light">Service Desk</span>
+    </a>
+
+    <div class="sidebar">
+      {% if user.is_authenticated %}
+      <div class="user-panel mt-3 pb-3 mb-3 d-flex">
+        <div class="image">
+          <i class="fas fa-user-circle fa-2x text-gray-300 mt-1"></i>
+        </div>
+        <div class="info">
+          <a href="#" class="d-block">{{ user.get_full_name|default:user.username }}</a>
+        </div>
+      </div>
+      {% endif %}
+
+      <nav class="mt-2">
+        <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu" data-accordion="false">
+          {% if user.is_authenticated %} {# Mostrar itens do menu apenas se autenticado #}
+          <li class="nav-item">
+            <a href="{% url 'customers:customer_list' %}" class="nav-link {% if request.resolver_match.app_name == 'customers' %}active{% endif %}">
+              <i class="nav-icon fas fa-users"></i>
+              <p>Clientes</p>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a href="{% url 'servicedesk:ticket_list' %}" class="nav-link {% if request.resolver_match.app_name == 'servicedesk' and 'ticket' in request.resolver_match.url_name %}active{% endif %}">
+              <i class="nav-icon fas fa-ticket-alt"></i>
+              <p>Tickets</p>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a href="{% url 'servicedesk:work_order_list' %}" class="nav-link {% if request.resolver_match.app_name == 'servicedesk' and 'work_order' in request.resolver_match.url_name %}active{% endif %}">
+              <i class="nav-icon fas fa-tools"></i>
+              <p>Ordens de Serviço</p>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a href="{% url 'reports:report_filter_page' %}" class="nav-link {% if request.resolver_match.app_name == 'reports' %}active{% endif %}">
+              <i class="nav-icon fas fa-chart-line"></i>
+              <p>Relatórios</p>
+            </a>
+          </li>
+          {% else %}
+           <li class="nav-item">
+            <a href="{% url 'login' %}" class="nav-link {% if request.resolver_match.url_name == 'login' %}active{% endif %}">
+              <i class="nav-icon fas fa-sign-in-alt"></i>
+              <p>Login</p>
+            </a>
+          </li>
+          {% endif %}
+          </ul>
+      </nav>
+      </div>
+    </aside>
+
+  <div class="content-wrapper">
+    <div class="content-header">
+      <div class="container-fluid">
+        <div class="row mb-2">
+          <div class="col-sm-6">
+            <h1 class="m-0">{% block page_title %}{{ page_title|default:"Bem-vindo" }}{% endblock %}</h1>
+          </div><div class="col-sm-6">
+            <ol class="breadcrumb float-sm-right">
+              <li class="breadcrumb-item"><a href="{% if user.is_authenticated %}{% url 'servicedesk:ticket_list' %}{% else %}{% url 'login' %}{% endif %}">Home</a></li>
+              {% block breadcrumb %}{% endblock %}
+              <li class="breadcrumb-item active">{{ page_title|default:"Página Atual" }}</li>
+            </ol>
+          </div></div></div></div>
+    <div class="content">
+      <div class="container-fluid">
+        {% if messages %}
+            {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            {% endfor %}
+        {% endif %}
+
+        {% block content %}
+        {% endblock %}
+      </div></div>
+    </div>
+  <footer class="main-footer">
+    <div class="float-right d-none d-sm-inline">
+      Anything you want
+    </div>
+    <strong>Copyright &copy; {% now "Y" %} <a href="#">Sua Empresa</a>.</strong> All rights reserved.
+  </footer>
+</div>
+<div class="modal fade" id="ajaxModal" tabindex="-1" role="dialog" aria-labelledby="ajaxModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg" role="document"> <div class="modal-content">
+      </div>
+  </div>
+</div>
+
+<div class="loading-modal-overlay" id="loadingOverlay" style="display: none;">
+    <div class="loading-modal-spinner">
+        <i class="fas fa-spinner fa-spin"></i>
+    </div>
+</div>
+
+
+<script src="{% static 'adminlte/plugins/jquery/jquery.min.js' %}"></script>
+<script src="{% static 'adminlte/plugins/bootstrap/js/bootstrap.bundle.min.js' %}"></script>
+<script src="{% static 'adminlte/dist/js/adminlte.min.js' %}"></script>
+
+<script>
+$(document).ready(function() {
+    function showLoading() {
+        $('#loadingOverlay').fadeIn(100);
+    }
+
+    function hideLoading() {
+        $('#loadingOverlay').fadeOut(100);
+    }
+
+    $(document).on('click', '[data-toggle="ajax-modal"]', function(event) {
+        event.preventDefault();
+        var clickedElement = $(this);
+
+        if (clickedElement && clickedElement.length && typeof clickedElement.prop === 'function') {
+            var url = clickedElement.data('url') || clickedElement.attr('href');
+            if (!url || url === '#') {
+                return;
+            }
+            var modalTarget = $(clickedElement.data('target') || '#ajaxModal');
+            showLoading();
+            $.ajax({
+                url: url,
+                type: 'GET',
+                success: function(response) {
+                    modalTarget.find('.modal-content').html(response);
+                    modalTarget.modal('show');
+                },
+                error: function(xhr, status, error) {
+                    alert('Ocorreu um erro ao carregar o conteúdo. Tente novamente.');
+                },
+                complete: function() {
+                    hideLoading();
+                }
+            });
+        } else {
+            return;
+        }
+    });
+
+    $(document).on('submit', '#ajaxModal form.ajax-form', function(event) {
+        event.preventDefault();
+        var form = $(this);
+        var url = form.attr('action');
+        var method = form.attr('method') || 'POST';
+        var formData = new FormData(form[0]);
+        var modalTarget = form.closest('.modal');
+
+        modalTarget.find('.modal-body .alert-danger').remove();
+        showLoading();
+
+        $.ajax({
+            url: url,
+            type: method,
+            data: formData,
+            processData: false,
+            contentType: false,
+            headers: {'X-Requested-With': 'XMLHttpRequest'},
+            success: function(response) {
+                if (response.success) {
+                    modalTarget.modal('hide');
+                    if (response.message) {
+                        $('.content .container-fluid').prepend(
+                            '<div class="alert alert-success alert-dismissible fade show" role="alert">' +
+                            response.message +
+                            '<button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button></div>'
+                        );
+                    }
+                    if (response.customer_id && response.customer_name) {
+                        $('select[name="customer"]').each(function() {
+                            var $select = $(this);
+                            if (!$select.find('option[value="' + response.customer_id + '"]').length) {
+                                $select.append($('<option>', {
+                                    value: response.customer_id,
+                                    text: response.customer_name
+                                }));
+                            }
+                        });
+                    }
+                    setTimeout(function() {
+                        if (typeof filterForm !== 'undefined' && $('#filterForm').length) {
+                            $('#filterForm').submit();
+                        } else {
+                            location.reload();
+                        }
+                    }, 500);
+                } else {
+                    if (response.errors) {
+                        var error_html = '<div class="alert alert-danger">Por favor, corrija os erros abaixo:<ul>';
+                        var errorsObject = typeof response.errors === 'string' ? JSON.parse(response.errors) : response.errors;
+                        for (var field in errorsObject) {
+                            errorsObject[field].forEach(function(error) {
+                                error_html += '<li>';
+                                if(field !== '__all__') {
+                                   error_html += field + ': ';
+                                }
+                                error_html += error.message + '</li>';
+                            });
+                        }
+                        error_html += '</ul></div>';
+                        modalTarget.find('.modal-body').prepend(error_html);
+                    } else {
+                        alert(response.message || 'Ocorreu um erro ao processar o formulário.');
+                    }
+                }
+            },
+            error: function(xhr) {
+                var errorMsg = 'Ocorreu um erro ao processar sua solicitação.';
+                if (xhr.responseJSON) {
+                    if (xhr.responseJSON.message) {
+                        errorMsg = xhr.responseJSON.message;
+                    } else if (xhr.responseJSON.errors) {
+                        var errorsObject = typeof xhr.responseJSON.errors === 'string' ? JSON.parse(xhr.responseJSON.errors) : xhr.responseJSON.errors;
+                        errorMsg = "Erros de validação:\n";
+                         for (var field in errorsObject) {
+                            errorsObject[field].forEach(function(error) {
+                               errorMsg += field + ': ' + error.message + "\n";
+                            });
+                        }
+                    }
+                }
+                alert(errorMsg);
+            },
+            complete: function() {
+                hideLoading();
+            }
+        });
+    });
+
+    $('#ajaxModal').on('hidden.bs.modal', function () {
+        $(this).find('.modal-content').html('');
+        $(this).find('.modal-body .alert-danger').remove();
+    });
+});
+</script>
+
+{% block extrajs %}{% endblock %}
+</body>
+</html>
