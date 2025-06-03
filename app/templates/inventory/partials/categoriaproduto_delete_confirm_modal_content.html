@@ -1,0 +1,15 @@
+<div class="modal-header bg-danger text-white">
+    <h5 class="modal-title">{{ delete_title }}</h5>
+    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+</div>
+<form method="post" action="{{ form_action_url }}" class="ajax-form">
+    {% csrf_token %}
+    <div class="modal-body">
+        <p>Tem certeza que deseja excluir a categoria <strong>{{ categoria.nome }}</strong>?</p>
+        <p class="text-muted"><small>Produtos associados a esta categoria terão o campo "Categoria" definido como nulo.</small></p>
+    </div>
+    <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+        <button type="submit" class="btn btn-danger">Sim, Excluir</button>
+    </div>
+</form>

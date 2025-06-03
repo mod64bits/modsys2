@@ -1,0 +1,54 @@
+{% extends "base/base.html" %}
+{% load static %}
+
+{% block title %}Categorias de Produtos{% endblock %}
+
+{% block page_title %}
+    Categorias de Produtos
+    <button type="button" class="btn btn-primary btn-sm float-right" 
+            data-toggle="ajax-modal" 
+            data-target="#ajaxModal"
+            data-url="{% url 'inventory:categoriaproduto_create_modal' %}">
+        <i class="fas fa-plus"></i> Nova Categoria
+    </button>
+{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-body table-responsive p-0">
+        {% if categorias %}
+        <table class="table table-hover text-nowrap">
+            <thead>
+                <tr>
+                    <th>Nome</th>
+                    <th>Descrição</th>
+                    <th>Ações</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for categoria in categorias %}
+                <tr>
+                    <td>
+                        <a href="#" data-toggle="ajax-modal" data-target="#ajaxModal" data-url="{% url 'inventory:categoriaproduto_detail_modal' categoria.pk %}">
+                            {{ categoria.nome }}
+                        </a>
+                    </td>
+                    <td>{{ categoria.descricao|truncatechars:80|default:"-" }}</td>
+                    <td>
+                        <button type="button" class="btn btn-xs btn-info" data-toggle="ajax-modal" data-target="#ajaxModal" data-url="{% url 'inventory:categoriaproduto_detail_modal' categoria.pk %}" title="Ver Detalhes"><i class="fas fa-eye"></i></button>
+                        <button type="button" class="btn btn-xs btn-warning" data-toggle="ajax-modal" data-target="#ajaxModal" data-url="{% url 'inventory:categoriaproduto_update_modal' categoria.pk %}" title="Editar"><i class="fas fa-edit"></i></button>
+                        <button type="button" class="btn btn-xs btn-danger" data-toggle="ajax-modal" data-target="#ajaxModal" data-url="{% url 'inventory:categoriaproduto_delete_modal' categoria.pk %}" title="Excluir"><i class="fas fa-trash"></i></button>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <div class="p-3 text-center">
+            <p>Nenhuma categoria encontrada.</p>
+            <button type="button" class="btn btn-primary" data-toggle="ajax-modal" data-target="#ajaxModal" data-url="{% url 'inventory:categoriaproduto_create_modal' %}"><i class="fas fa-plus"></i> Cadastrar Primeira Categoria</button>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

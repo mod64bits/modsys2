@@ -3,7 +3,7 @@
 <html lang="pt-br">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale-1">
   <title>{% block title %}Service Desk App{% endblock %} | AdminLTE 3</title>
 
   <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700&display=fallback">
@@ -29,6 +29,10 @@
     }
     .nav-tabs .nav-link.active {
         border-bottom: 2px solid #007bff;
+    }
+    /* Para garantir que o select2 funcione bem dentro de modais */
+    .select2-container--open {
+        z-index: 10055 !important; /* Acima do modal backdrop (1050 por padrão) */
     }
   </style>
 </head>
@@ -94,7 +98,7 @@
 
       <nav class="mt-2">
         <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu" data-accordion="false">
-          {% if user.is_authenticated %} {# Mostrar itens do menu apenas se autenticado #}
+          {% if user.is_authenticated %}
           <li class="nav-item">
             <a href="{% url 'customers:customer_list' %}" class="nav-link {% if request.resolver_match.app_name == 'customers' %}active{% endif %}">
               <i class="nav-icon fas fa-users"></i>
@@ -112,6 +116,35 @@
               <i class="nav-icon fas fa-tools"></i>
               <p>Ordens de Serviço</p>
             </a>
+          </li>
+           <li class="nav-item {% if request.resolver_match.app_name == 'inventory' %}menu-open{% endif %}">
+            <a href="#" class="nav-link {% if request.resolver_match.app_name == 'inventory' %}active{% endif %}">
+              <i class="nav-icon fas fa-boxes"></i>
+              <p>
+                Inventário
+                <i class="right fas fa-angle-left"></i>
+              </p>
+            </a>
+            <ul class="nav nav-treeview">
+              <li class="nav-item">
+                <a href="{% url 'inventory:produto_list' %}" class="nav-link {% if request.resolver_match.url_name == 'produto_list' %}active{% endif %}">
+                  <i class="far fa-circle nav-icon"></i>
+                  <p>Produtos</p>
+                </a>
+              </li>
+              <li class="nav-item">
+                <a href="{% url 'inventory:categoriaproduto_list' %}" class="nav-link {% if request.resolver_match.url_name == 'categoriaproduto_list' %}active{% endif %}">
+                  <i class="far fa-circle nav-icon"></i>
+                  <p>Categorias</p>
+                </a>
+              </li>
+              <li class="nav-item">
+                <a href="{% url 'inventory:fornecedor_list' %}" class="nav-link {% if request.resolver_match.url_name == 'fornecedor_list' %}active{% endif %}">
+                  <i class="far fa-circle nav-icon"></i>
+                  <p>Fornecedores</p>
+                </a>
+              </li>
+            </ul>
           </li>
           <li class="nav-item">
             <a href="{% url 'reports:report_filter_page' %}" class="nav-link {% if request.resolver_match.app_name == 'reports' %}active{% endif %}">
@@ -188,6 +221,10 @@
 
 <script>
 $(document).ready(function() {
+    var originalModalContent = null; // Para guardar o conteúdo do modal original (ex: ProdutoForm)
+    var originalModalUrl = null; // Para guardar a URL do modal original
+    var targetSelectName = null; // Para guardar o nome do select a ser atualizado
+
     function showLoading() {
         $('#loadingOverlay').fadeIn(100);
     }
@@ -199,13 +236,25 @@ $(document).ready(function() {
     $(document).on('click', '[data-toggle="ajax-modal"]', function(event) {
         event.preventDefault();
         var clickedElement = $(this);
+        var url = clickedElement.data('url') || clickedElement.attr('href');
+        var modalTarget = $(clickedElement.data('target') || '#ajaxModal');
+
+        // Verifica se é um botão de "quick create" (adicionar novo relacionado)
+        if (clickedElement.hasClass('quick-create-related')) {
+            originalModalContent = modalTarget.find('.modal-content').html(); // Salva o conteúdo atual
+            originalModalUrl = modalTarget.find('form.ajax-form').attr('action'); // Salva a URL do form atual
+            targetSelectName = clickedElement.data('update-select'); // Pega o nome do select a ser atualizado
+        } else {
+            // Se não for quick-create, limpa o conteúdo salvo, pois é um novo fluxo principal
+            originalModalContent = null;
+            originalModalUrl = null;
+            targetSelectName = null;
+        }
 
         if (clickedElement && clickedElement.length && typeof clickedElement.prop === 'function') {
-            var url = clickedElement.data('url') || clickedElement.attr('href');
             if (!url || url === '#') {
                 return;
             }
-            var modalTarget = $(clickedElement.data('target') || '#ajaxModal');
             showLoading();
             $.ajax({
                 url: url,
@@ -232,7 +281,7 @@ $(document).ready(function() {
         var url = form.attr('action');
         var method = form.attr('method') || 'POST';
         var formData = new FormData(form[0]);
-        var modalTarget = form.closest('.modal');
+        var modalTarget = form.closest('.modal'); // O modal atual (#ajaxModal)
 
         modalTarget.find('.modal-body .alert-danger').remove();
         showLoading();
@@ -245,34 +294,62 @@ $(document).ready(function() {
             contentType: false,
             headers: {'X-Requested-With': 'XMLHttpRequest'},
             success: function(response) {
+                hideLoading(); // Esconde o loading antes de manipular o DOM
                 if (response.success) {
-                    modalTarget.modal('hide');
-                    if (response.message) {
-                        $('.content .container-fluid').prepend(
-                            '<div class="alert alert-success alert-dismissible fade show" role="alert">' +
-                            response.message +
-                            '<button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button></div>'
-                        );
-                    }
-                    if (response.customer_id && response.customer_name) {
-                        $('select[name="customer"]').each(function() {
-                            var $select = $(this);
-                            if (!$select.find('option[value="' + response.customer_id + '"]').length) {
-                                $select.append($('<option>', {
-                                    value: response.customer_id,
-                                    text: response.customer_name
-                                }));
+                    // Verifica se foi um "quick create" e se temos um select para atualizar
+                    if (targetSelectName && (response.fornecedor_id || response.categoria_id || response.customer_id)) {
+                        var newId, newName;
+                        if (response.fornecedor_id) { newId = response.fornecedor_id; newName = response.fornecedor_name; }
+                        else if (response.categoria_id) { newId = response.categoria_id; newName = response.categoria_name; }
+                        else if (response.customer_id) { newId = response.customer_id; newName = response.customer_name; }
+
+                        // Fecha o modal de "quick create"
+                        modalTarget.modal('hide');
+
+                        // Restaura o conteúdo do modal original (ex: ProdutoForm)
+                        // E então atualiza o select.
+                        // É importante que o #ajaxModal seja o mesmo container.
+                        if (originalModalContent && originalModalUrl) {
+                             // Encontra o select no conteúdo original salvo ou recarrega o form original
+                            var $originalFormContainer = $('<div>').html(originalModalContent);
+                            var $selectToUpdate = $originalFormContainer.find('select[name="' + targetSelectName + '"]');
+
+                            if ($selectToUpdate.length) {
+                                if (!$selectToUpdate.find('option[value="' + newId + '"]').length) {
+                                    $selectToUpdate.append($('<option>', { value: newId, text: newName }));
+                                }
+                                $selectToUpdate.val(newId);
+                                // Se estiver usando Select2, precisa reinicializar ou dar trigger('change') nele
+                                // if($.fn.select2 && $selectToUpdate.data('select2')) { $selectToUpdate.trigger('change'); }
                             }
-                        });
-                    }
-                    setTimeout(function() {
-                        if (typeof filterForm !== 'undefined' && $('#filterForm').length) {
-                            $('#filterForm').submit();
-                        } else {
-                            location.reload();
+                            // Coloca o conteúdo original de volta no modal e o reabre
+                            $('#ajaxModal').find('.modal-content').html($originalFormContainer.html());
+                            $('#ajaxModal').modal('show'); // Reabre o modal principal
                         }
-                    }, 500);
-                } else {
+
+                        // Limpa as variáveis de estado do quick create
+                        originalModalContent = null;
+                        originalModalUrl = null;
+                        targetSelectName = null;
+
+                    } else { // Submissão de formulário principal (não quick create)
+                        modalTarget.modal('hide');
+                        if (response.message) {
+                            $('.content .container-fluid').prepend(
+                                '<div class="alert alert-success alert-dismissible fade show" role="alert">' +
+                                response.message +
+                                '<button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button></div>'
+                            );
+                        }
+                        setTimeout(function() {
+                            if (typeof filterForm !== 'undefined' && $('#filterForm').length) {
+                                $('#filterForm').submit();
+                            } else {
+                                location.reload();
+                            }
+                        }, 300);
+                    }
+                } else { // response.success === false
                     if (response.errors) {
                         var error_html = '<div class="alert alert-danger">Por favor, corrija os erros abaixo:<ul>';
                         var errorsObject = typeof response.errors === 'string' ? JSON.parse(response.errors) : response.errors;
@@ -293,6 +370,7 @@ $(document).ready(function() {
                 }
             },
             error: function(xhr) {
+                hideLoading();
                 var errorMsg = 'Ocorreu um erro ao processar sua solicitação.';
                 if (xhr.responseJSON) {
                     if (xhr.responseJSON.message) {
@@ -308,15 +386,19 @@ $(document).ready(function() {
                     }
                 }
                 alert(errorMsg);
-            },
-            complete: function() {
-                hideLoading();
             }
+            // complete: function() { // Movido para dentro de success e error para melhor controle
+            //     hideLoading();
+            // }
         });
     });
 
     $('#ajaxModal').on('hidden.bs.modal', function () {
-        $(this).find('.modal-content').html('');
+        // Só limpa o conteúdo se não estivermos no meio de um quick create
+        // que precisa restaurar o conteúdo.
+        if (!originalModalContent) {
+            $(this).find('.modal-content').html('');
+        }
         $(this).find('.modal-body .alert-danger').remove();
     });
 });

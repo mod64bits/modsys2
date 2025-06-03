@@ -1,0 +1,73 @@
+{% extends "base/base.html" %}
+{% load static %}
+{% load i18n %} {% block title %}Lista de Produtos{% endblock %}
+
+{% block page_title %}
+    Lista de Produtos
+    <button type="button" class="btn btn-primary btn-sm float-right" 
+            data-toggle="ajax-modal" 
+            data-target="#ajaxModal"
+            data-url="{% url 'inventory:produto_create_modal' %}">
+        <i class="fas fa-plus"></i> Novo Produto
+    </button>
+{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-body table-responsive p-0">
+        {% if produtos %}
+        <table class="table table-hover text-nowrap">
+            <thead>
+                <tr>
+                    <th>Nome</th>
+                    <th>Fabricante</th>
+                    <th>Fornecedor</th>
+                    <th>Preço Compra</th>
+                    <th>Preço Venda (Sug.)</th>
+                    <th>Ativo</th>
+                    <th>Ações</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for produto in produtos %}
+                <tr>
+                    <td>
+                        <a href="#" data-toggle="ajax-modal" data-target="#ajaxModal" data-url="{% url 'inventory:produto_detail_modal' produto.pk %}">
+                            {{ produto.nome|truncatechars:40 }}
+                        </a>
+                    </td>
+                    <td>{{ produto.fabricante|default:"-" }}</td>
+                    <td>
+                        {% if produto.fornecedor %}
+                        <a href="#" data-toggle="ajax-modal" data-target="#ajaxModal" data-url="{% url 'inventory:fornecedor_detail_modal' produto.fornecedor.pk %}">
+                            {{ produto.fornecedor.nome|truncatechars:30 }}
+                        </a>
+                        {% else %}-{% endif %}
+                    </td>
+                    <td>R$ {{ produto.preco_compra|floatformat:2 }}</td>
+                    <td>R$ {{ produto.preco_venda_sugerido|floatformat:2|default:"-" }}</td>
+                    <td>
+                        {% if produto.ativo %}
+                            <span class="badge badge-success">Sim</span>
+                        {% else %}
+                            <span class="badge badge-danger">Não</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <button type="button" class="btn btn-xs btn-info" data-toggle="ajax-modal" data-target="#ajaxModal" data-url="{% url 'inventory:produto_detail_modal' produto.pk %}" title="Ver Detalhes"><i class="fas fa-eye"></i></button>
+                        <button type="button" class="btn btn-xs btn-warning" data-toggle="ajax-modal" data-target="#ajaxModal" data-url="{% url 'inventory:produto_update_modal' produto.pk %}" title="Editar"><i class="fas fa-edit"></i></button>
+                        <button type="button" class="btn btn-xs btn-danger" data-toggle="ajax-modal" data-target="#ajaxModal" data-url="{% url 'inventory:produto_delete_modal' produto.pk %}" title="Excluir"><i class="fas fa-trash"></i></button>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <div class="p-3 text-center">
+            <p>Nenhum produto encontrado.</p>
+            <button type="button" class="btn btn-primary" data-toggle="ajax-modal" data-target="#ajaxModal" data-url="{% url 'inventory:produto_create_modal' %}"><i class="fas fa-plus"></i> Cadastrar Primeiro Produto</button>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
