@@ -1,5 +1,7 @@
 # quotes/admin.py
 from django.contrib import admin
+
+from .forms import ItemProdutoOrcamentoForm, MaoDeObraOrcamentoForm, InsumoOrcamentoForm, InformacoesOrcamentoForm
 from .models import Orcamento, ItemProdutoOrcamento, MaoDeObraOrcamento, InformacoesOrcamento, InsumoOrcamento
 
 class ItemProdutoOrcamentoInline(admin.TabularInline):

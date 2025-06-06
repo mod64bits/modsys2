@@ -1,10 +1,493 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Title</title>
-</head>
-<body>
+{% extends "base/base.html" %}
+{% load static %}
+{% load crispy_forms_tags %} {% block title %}{{ page_title|default:"Formulário de Orçamento" }}{% endblock %}
 
-</body>
-</html>
+{% block page_title %}{{ page_title|default:"Formulário de Orçamento" }}{% endblock %}
+
+{% block extrastyles %}
+{{ form.media.css }}
+{{ item_produto_formset.media.css }}
+{{ mao_de_obra_formset.media.css }}
+{{ insumo_formset.media.css }}
+{{ informacoes_form.media.css }}
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<link href="https://cdnjs.cloudflare.com/ajax/libs/select2-bootstrap4-theme/1.5.2/select2-bootstrap4.min.css" rel="stylesheet">
+<style>
+    .formset-row {
+        padding: 10px;
+        border-bottom: 1px solid #eee;
+        margin-bottom: 10px;
+    }
+    .formset-row:last-child {
+        border-bottom: none;
+    }
+    .formset-container .form-group {
+        margin-bottom: 0.5rem; /* Menor margem para campos dentro do formset */
+    }
+    .select2-container--bootstrap4 .select2-selection--single {
+        height: calc(2.25rem + 2px) !important;
+    }
+    .total-display { font-size: 1.1em; font-weight: bold; }
+    .delete-formset-row { margin-top: 25px;}
+</style>
+{% endblock %}
+
+{% block content %}
+<form method="post" action="{{ form_action_url }}" id="orcamentoFormMain">
+    {% csrf_token %}
+    <div class="card card-primary card-outline">
+        <div class="card-header"><h3 class="card-title">Dados Principais do Orçamento</h3></div>
+        <div class="card-body">
+            {% if form.non_field_errors %}<div class="alert alert-danger">{{ form.non_field_errors }}</div>{% endif %}
+            {% if crispy_forms_tags %}
+                {{ form|crispy }}
+            {% else %}
+                <div class="row">
+                    <div class="col-md-6 form-group">{{ form.cliente.label_tag }} {{ form.cliente }} {% for error in form.cliente.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}</div>
+                    <div class="col-md-3 form-group">{{ form.validade.label_tag }} {{ form.validade }} {% for error in form.validade.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}</div>
+                    <div class="col-md-3 form-group">{{ form.status.label_tag }} {{ form.status }} {% for error in form.status.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}</div>
+                </div>
+                <div class="form-group">{{ form.descricao_geral.label_tag }} {{ form.descricao_geral }} {% for error in form.descricao_geral.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}</div>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="card card-info card-outline mt-3">
+        <div class="card-header"><h3 class="card-title">Itens de Produto</h3></div>
+        <div class="card-body formset-container" id="item-produto-formset-container"> {# ID do Container: item-produto-formset-container #}
+            {{ item_produto_formset.management_form }}
+            {% if item_produto_formset.non_form_errors %}<div class="alert alert-danger">{{ item_produto_formset.non_form_errors }}</div>{% endif %}
+
+            {% for form_item in item_produto_formset %}
+            <div class="formset-row item-produto-form" id="{{ item_produto_formset.prefix }}-{% if form_item.instance.pk %}{{ form_item.instance.pk }}{% else %}{{ forloop.counter0 }}{% endif %}">
+                {% if form_item.non_field_errors %}<div class="alert alert-danger">{{ form_item.non_field_errors }}</div>{% endif %}
+                {% for hidden_field in form_item.hidden_fields %}{{ hidden_field }}{% endfor %}
+                <div class="row align-items-end">
+                    <div class="col-md-4 form-group">{{ form_item.produto_lookup.label_tag }} {{ form_item.produto_lookup }} {% for error in form_item.produto_lookup.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}</div>
+                    <div class="col-md-2 form-group">{{ form_item.quantidade.label_tag }} {{ form_item.quantidade }} {% for error in form_item.quantidade.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}</div>
+                    <div class="col-md-2 form-group">{{ form_item.preco_compra_unitario_historico.label_tag }} {{ form_item.preco_compra_unitario_historico }} {% for error in form_item.preco_compra_unitario_historico.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}</div>
+                    <div class="col-md-2 form-group">{{ form_item.porcentagem_markup.label_tag }} {{ form_item.porcentagem_markup }} {% for error in form_item.porcentagem_markup.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}</div>
+                    <div class="col-md-2 form-group">{{ form_item.preco_venda_unitario_definido.label_tag }} {{ form_item.preco_venda_unitario_definido }} {% for error in form_item.preco_venda_unitario_definido.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}</div>
+                    <div class="col-md-1 form-group text-right">
+                        {% if item_produto_formset.can_delete %}
+                        <div class="form-check delete-formset-row">{{ form_item.DELETE }} <label class="form-check-label" for="{{ form_item.DELETE.id_for_label }}">Excluir</label></div>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-3"><small>Subtotal Compra: <span class="subtotal-compra-display">R$ 0.00</span></small></div>
+                    <div class="col-md-3"><small>Subtotal Venda: <span class="subtotal-venda-display">R$ 0.00</span></small></div>
+                    <div class="col-md-3"><small>Lucro Item: <span class="lucro-item-display">R$ 0.00</span></small></div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        <div class="card-footer">
+             <button type="button" class="btn btn-sm btn-success add-formset-row"
+                    data-django-prefix="{{ item_produto_formset.prefix }}"
+                    data-template-id-base="item-produto">Adicionar Produto</button>
+            <strong class="float-right">Total Produtos (Venda): <span id="total-produtos-venda-display" class="total-display">R$ 0.00</span></strong>
+        </div>
+    </div>
+
+    <script type="text/template" id="item-produto-empty-form-template"> {# ID do Template: item-produto-empty-form-template #}
+        {% spaceless %}
+        <div class="formset-row item-produto-form" id="{{ item_produto_formset.prefix }}-__prefix__">
+            {{ item_produto_formset.empty_form.management_form }}
+            {% for hidden_field in item_produto_formset.empty_form.hidden_fields %}{{ hidden_field }}{% endfor %}
+            <div class="row align-items-end">
+                <div class="col-md-4 form-group">{{ item_produto_formset.empty_form.produto_lookup.label_tag }} {{ item_produto_formset.empty_form.produto_lookup }}</div>
+                <div class="col-md-2 form-group">{{ item_produto_formset.empty_form.quantidade.label_tag }} {{ item_produto_formset.empty_form.quantidade }}</div>
+                <div class="col-md-2 form-group">{{ item_produto_formset.empty_form.preco_compra_unitario_historico.label_tag }} {{ item_produto_formset.empty_form.preco_compra_unitario_historico }}</div>
+                <div class="col-md-2 form-group">{{ item_produto_formset.empty_form.porcentagem_markup.label_tag }} {{ item_produto_formset.empty_form.porcentagem_markup }}</div>
+                <div class="col-md-2 form-group">{{ item_produto_formset.empty_form.preco_venda_unitario_definido.label_tag }} {{ item_produto_formset.empty_form.preco_venda_unitario_definido }}</div>
+                <div class="col-md-1 form-group text-right">
+                    {% if item_produto_formset.can_delete %}
+                    <div class="form-check delete-formset-row">{{ item_produto_formset.empty_form.DELETE }} <label class="form-check-label" for="{{ item_produto_formset.empty_form.DELETE.id_for_label }}">Excluir</label></div>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-3"><small>Subtotal Compra: <span class="subtotal-compra-display">R$ 0.00</span></small></div>
+                <div class="col-md-3"><small>Subtotal Venda: <span class="subtotal-venda-display">R$ 0.00</span></small></div>
+                <div class="col-md-3"><small>Lucro Item: <span class="lucro-item-display">R$ 0.00</span></small></div>
+            </div>
+        </div>
+        {% endspaceless %}
+    </script>
+
+    <div class="card card-info card-outline mt-3">
+        <div class="card-header"><h3 class="card-title">Itens de Mão de Obra</h3></div>
+        <div class="card-body formset-container" id="mao-de-obra-formset-container"> {# ID: mao-de-obra-formset-container #}
+            {{ mao_de_obra_formset.management_form }}
+            {% if mao_de_obra_formset.non_form_errors %}<div class="alert alert-danger">{{ mao_de_obra_formset.non_form_errors }}</div>{% endif %}
+            {% for form_item in mao_de_obra_formset %}
+            <div class="formset-row mao-de-obra-form" id="{{ mao_de_obra_formset.prefix }}-{% if form_item.instance.pk %}{{ form_item.instance.pk }}{% else %}{{ forloop.counter0 }}{% endif %}">
+                {% if form_item.non_field_errors %}<div class="alert alert-danger">{{ form_item.non_field_errors }}</div>{% endif %}
+                {% for hidden_field in form_item.hidden_fields %}{{ hidden_field }}{% endfor %}
+                <div class="row align-items-end">
+                    <div class="col-md-3 form-group">{{ form_item.tipo.label_tag }} {{ form_item.tipo }}</div>
+                    <div class="col-md-5 form-group">{{ form_item.descricao.label_tag }} {{ form_item.descricao }}</div>
+                    <div class="col-md-3 form-group">{{ form_item.valor.label_tag }} {{ form_item.valor }}</div>
+                    <div class="col-md-1 form-group text-right">
+                        {% if mao_de_obra_formset.can_delete %}
+                        <div class="form-check delete-formset-row">{{ form_item.DELETE }} <label class="form-check-label" for="{{ form_item.DELETE.id_for_label }}">Excluir</label></div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        <div class="card-footer">
+            <button type="button" class="btn btn-sm btn-success add-formset-row"
+                    data-django-prefix="{{ mao_de_obra_formset.prefix }}"
+                    data-template-id-base="mao-de-obra">Adicionar Mão de Obra</button>
+            <strong class="float-right">Total Mão de Obra: <span id="total-mao-de-obra-display" class="total-display">R$ 0.00</span></strong>
+        </div>
+    </div>
+    <script type="text/template" id="mao-de-obra-empty-form-template"> {# ID: mao-de-obra-empty-form-template #}
+        {% spaceless %}
+        <div class="formset-row mao-de-obra-form" id="{{ mao_de_obra_formset.prefix }}-__prefix__">
+            {{ mao_de_obra_formset.empty_form.management_form }}
+            {% for hidden_field in mao_de_obra_formset.empty_form.hidden_fields %}{{ hidden_field }}{% endfor %}
+            <div class="row align-items-end">
+                <div class="col-md-3 form-group">{{ mao_de_obra_formset.empty_form.tipo.label_tag }} {{ mao_de_obra_formset.empty_form.tipo }}</div>
+                <div class="col-md-5 form-group">{{ mao_de_obra_formset.empty_form.descricao.label_tag }} {{ mao_de_obra_formset.empty_form.descricao }}</div>
+                <div class="col-md-3 form-group">{{ mao_de_obra_formset.empty_form.valor.label_tag }} {{ mao_de_obra_formset.empty_form.valor }}</div>
+                <div class="col-md-1 form-group text-right">
+                    {% if mao_de_obra_formset.can_delete %}
+                     <div class="form-check delete-formset-row">{{ mao_de_obra_formset.empty_form.DELETE }} <label class="form-check-label" for="{{ mao_de_obra_formset.empty_form.DELETE.id_for_label }}">Excluir</label></div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endspaceless %}
+    </script>
+
+    <div class="card card-warning card-outline mt-3">
+        <div class="card-header"><h3 class="card-title">Insumos / Gastos Adicionais</h3></div>
+        <div class="card-body formset-container" id="insumo-formset-container"> {# ID: insumo-formset-container #}
+            {{ insumo_formset.management_form }}
+            {% if insumo_formset.non_form_errors %}<div class="alert alert-danger">{{ insumo_formset.non_form_errors }}</div>{% endif %}
+            {% for form_item in insumo_formset %}
+            <div class="formset-row insumo-form" id="{{ insumo_formset.prefix }}-{% if form_item.instance.pk %}{{ form_item.instance.pk }}{% else %}{{ forloop.counter0 }}{% endif %}">
+                {% if form_item.non_field_errors %}<div class="alert alert-danger">{{ form_item.non_field_errors }}</div>{% endif %}
+                {% for hidden_field in form_item.hidden_fields %}{{ hidden_field }}{% endfor %}
+                <div class="row align-items-end">
+                    <div class="col-md-6 form-group">{{ form_item.descricao.label_tag }} {{ form_item.descricao }}</div>
+                    <div class="col-md-2 form-group">{{ form_item.valor.label_tag }} {{ form_item.valor }}</div>
+                    <div class="col-md-3 form-group">{{ form_item.data_gasto.label_tag }} {{ form_item.data_gasto }}</div>
+                    <div class="col-md-1 form-group text-right">
+                        {% if insumo_formset.can_delete %}
+                        <div class="form-check delete-formset-row">{{ form_item.DELETE }} <label class="form-check-label" for="{{ form_item.DELETE.id_for_label }}">Excluir</label></div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        <div class="card-footer">
+            <button type="button" class="btn btn-sm btn-success add-formset-row"
+                    data-django-prefix="{{ insumo_formset.prefix }}"
+                    data-template-id-base="insumo">Adicionar Insumo</button>
+            <strong class="float-right">Total Insumos: <span id="total-insumos-display" class="total-display">R$ 0.00</span></strong>
+        </div>
+    </div>
+    <script type="text/template" id="insumo-empty-form-template"> {# ID: insumo-empty-form-template #}
+        {% spaceless %}
+        <div class="formset-row insumo-form" id="{{ insumo_formset.prefix }}-__prefix__">
+            {{ insumo_formset.empty_form.management_form }}
+            {% for hidden_field in insumo_formset.empty_form.hidden_fields %}{{ hidden_field }}{% endfor %}
+            <div class="row align-items-end">
+                <div class="col-md-6 form-group">{{ insumo_formset.empty_form.descricao.label_tag }} {{ insumo_formset.empty_form.descricao }}</div>
+                <div class="col-md-2 form-group">{{ insumo_formset.empty_form.valor.label_tag }} {{ insumo_formset.empty_form.valor }}</div>
+                <div class="col-md-3 form-group">{{ insumo_formset.empty_form.data_gasto.label_tag }} {{ insumo_formset.empty_form.data_gasto }}</div>
+                <div class="col-md-1 form-group text-right">
+                     {% if insumo_formset.can_delete %}
+                     <div class="form-check delete-formset-row">{{ insumo_formset.empty_form.DELETE }} <label class="form-check-label" for="{{ insumo_formset.empty_form.DELETE.id_for_label }}">Excluir</label></div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endspaceless %}
+    </script>
+
+    <div class="card card-secondary card-outline mt-3">
+        <div class="card-header"><h3 class="card-title">Informações Adicionais</h3></div>
+        <div class="card-body">
+            {% if informacoes_form.non_field_errors %}<div class="alert alert-danger">{{ informacoes_form.non_field_errors }}</div>{% endif %}
+            {% if crispy_forms_tags %}
+                {{ informacoes_form|crispy }}
+            {% else %}
+                <div class="form-group">{{ informacoes_form.condicoes_pagamento.label_tag }} {{ informacoes_form.condicoes_pagamento }} {% for error in informacoes_form.condicoes_pagamento.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}</div>
+                <div class="form-group">{{ informacoes_form.prazo_entrega_instalacao.label_tag }} {{ informacoes_form.prazo_entrega_instalacao }} {% for error in informacoes_form.prazo_entrega_instalacao.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}</div>
+                <div class="form-group">{{ informacoes_form.garantia.label_tag }} {{ informacoes_form.garantia }} {% for error in informacoes_form.garantia.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}</div>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="card mt-4">
+        <div class="card-body bg-light">
+            <div class="row">
+                <div class="col-md-4"><strong>Custo Total Produtos:</strong> <span id="display-total-produtos-compra" class="total-display">R$ 0.00</span></div>
+                <div class="col-md-4"><strong>Lucro Equipamentos:</strong> <span id="display-lucro-equipamentos" class="total-display">R$ 0.00</span></div>
+            </div>
+            <hr>
+            <div class="row">
+                <div class="col-md-4"><strong>Total Produtos (Venda):</strong> <span id="display-total-produtos-venda" class="total-display">R$ 0.00</span></div>
+                <div class="col-md-4"><strong>Total Mão de Obra:</strong> <span id="display-total-mao-de-obra" class="total-display">R$ 0.00</span></div>
+                <div class="col-md-4"><strong>Total Insumos:</strong> <span id="display-total-insumos" class="total-display">R$ 0.00</span></div>
+            </div>
+            <hr>
+            <div class="row">
+                <div class="col-md-4"><h4>Valor Total Orçamento: <span id="display-valor-total-orcamento" class="total-display text-primary">R$ 0.00</span></h4></div>
+                <div class="col-md-4"><h4>Lucro Bruto: <span id="display-lucro-bruto" class="total-display text-success">R$ 0.00</span></h4></div>
+                <div class="col-md-4"><h4>Lucro Líquido: <span id="display-lucro-liquido" class="total-display text-info">R$ 0.00</span></h4></div>
+            </div>
+        </div>
+    </div>
+
+
+    <div class="mt-3 mb-3">
+        <button type="submit" class="btn btn-success btn-lg">
+            {% if is_create_view %}Criar Orçamento{% else %}Atualizar Orçamento{% endif %}
+        </button>
+        <a href="{% if orcamento %}{% url 'quotes:orcamento_detail' orcamento.pk %}{% else %}{% url 'quotes:orcamento_list' %}{% endif %}" class="btn btn-secondary btn-lg">Cancelar</a>
+    </div>
+</form>
+{% endblock %}
+
+{% block extrajs %}
+{{ form.media.js }}
+{{ item_produto_formset.media.js }}
+{{ mao_de_obra_formset.media.js }}
+{{ insumo_formset.media.js }}
+{{ informacoes_form.media.js }}
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+{# <script src="{% static 'adminlte/plugins/jquery-mask-plugin/jquery.mask.min.js' %}"></script> #}
+<script>
+$(document).ready(function() {
+    function initializeSelect2(element) {
+        $(element).find('.select2-field').select2({
+            theme: 'bootstrap4',
+            width: '100%',
+            placeholder: "Selecione...",
+            allowClear: true
+        });
+    }
+    initializeSelect2(document);
+
+    function addForm(btn) {
+        var djangoPrefix = $(btn).data('django-prefix');
+        var templateIdBase = $(btn).data('template-id-base');
+
+        var formCount = parseInt($('#id_' + djangoPrefix + '-TOTAL_FORMS').val());
+        var templateSelector = '#' + templateIdBase + '-empty-form-template';
+
+        var template = $(templateSelector).html();
+
+        if (typeof template === 'undefined' || template === null) {
+            // console.error("Template não encontrado para o seletor: " + templateSelector);
+            return null;
+        }
+        var newFormHtml = template.replace(/__prefix__/g, formCount);
+
+        $('#' + templateIdBase + '-formset-container').append(newFormHtml);
+        $('#id_' + djangoPrefix + '-TOTAL_FORMS').val(formCount + 1);
+
+        var newFormElement = $('#' + djangoPrefix + '-' + formCount);
+
+        initializeSelect2(newFormElement);
+
+        newFormElement.find('.item-calc[type="text"], .item-calc[type="number"]').each(function() {
+            // $(this).mask('#.##0,00', {reverse: true});
+        });
+
+        newFormElement.find('.delete-formset-row').show();
+        return newFormElement;
+    }
+
+    $('.add-formset-row').click(function() {
+        addForm(this);
+        updateAllTotals();
+    });
+
+    $('form#orcamentoFormMain').on('change input', '.item-calc, .product-lookup', function(event) {
+        var $triggeredElement = $(event.target);
+        var $row = $triggeredElement.closest('.formset-row');
+
+        if ($triggeredElement.hasClass('product-lookup')) {
+            var productId = $triggeredElement.val();
+            var $productHiddenField = $row.find('input[name$="-produto"]');
+            var $costPriceField = $row.find('.product-cost-price');
+            var $sellPriceField = $row.find('.product-sell-price');
+            var $markupField = $row.find('.product-markup');
+
+            if (productId) {
+                $.ajax({
+                    url: "{% url 'quotes:ajax_get_product_details' product_id=0 %}".replace('0', productId),
+                    type: 'GET',
+                    success: function(data) {
+                        if (data.success) {
+                            $productHiddenField.val(productId);
+                            $costPriceField.val(formatCurrencyForInput(parseFloat(data.preco_compra)));
+                            if (data.preco_venda_sugerido && data.preco_venda_sugerido !== "0.00" && data.preco_venda_sugerido !== "0,00") {
+                                $sellPriceField.val(formatCurrencyForInput(parseFloat(data.preco_venda_sugerido)));
+                            } else {
+                                $sellPriceField.val(formatCurrencyForInput(parseFloat(data.preco_compra)));
+                            }
+                            $markupField.val('');
+                            calculateRowTotals($row);
+                            updateAllTotals();
+                        } else {
+                            // alert(data.error || "Erro ao buscar detalhes do produto.");
+                            $productHiddenField.val('');
+                            $costPriceField.val('');
+                            $sellPriceField.val('');
+                        }
+                    },
+                    error: function(xhr, status, error) {
+                        // console.error("AJAX error:", status, error, xhr.responseText);
+                        alert("Erro de comunicação ao buscar detalhes do produto.");
+                    }
+                });
+            } else {
+                $productHiddenField.val('');
+                $costPriceField.val('');
+                $sellPriceField.val('');
+                $markupField.val('');
+                calculateRowTotals($row);
+                updateAllTotals();
+            }
+        } else {
+            calculateRowTotals($row);
+            updateAllTotals();
+        }
+    });
+
+    function parseCurrency(value) {
+        if (typeof value !== 'string') {
+            value = String(value);
+        }
+        let s = value.replace(/[^\d,.-]/g, '');
+        if (s.includes(',') && s.includes('.')) {
+            if (s.lastIndexOf(',') > s.lastIndexOf('.')) {
+                s = s.replace(/\./g, '');
+                s = s.replace(',', '.');
+            } else {
+                s = s.replace(/,/g, '');
+            }
+        } else if (s.includes(',')) {
+            s = s.replace(',', '.');
+        }
+        const parsed = parseFloat(s);
+        var result = isNaN(parsed) ? 0 : parsed;
+        return result;
+    }
+
+    function formatCurrencyForDisplay(value) {
+        if (isNaN(value) || value === null) value = 0;
+        return value.toFixed(2).replace('.', ',');
+    }
+
+    function formatCurrencyForInput(value) {
+        if (isNaN(value) || value === null) value = 0;
+        return value.toFixed(2);
+    }
+
+
+    function calculateRowTotals($row) {
+        if ($row.hasClass('item-produto-form')) {
+            var qty = parseCurrency($row.find('input[name$="-quantidade"]').val());
+            var costPrice = parseCurrency($row.find('input[name$="-preco_compra_unitario_historico"]').val());
+            var sellPriceDefined = parseCurrency($row.find('input[name$="-preco_venda_unitario_definido"]').val());
+            var markup = parseCurrency($row.find('input[name$="-porcentagem_markup"]').val());
+
+            var sellPriceCalculated = sellPriceDefined;
+
+            if (markup > 0 && costPrice > 0) {
+                sellPriceCalculated = costPrice * (1 + (markup / 100));
+                $row.find('input[name$="-preco_venda_unitario_definido"]').val(formatCurrencyForInput(sellPriceCalculated));
+            }
+
+            var subtotalCompra = qty * costPrice;
+            var subtotalVenda = qty * sellPriceCalculated;
+            var lucroItem = subtotalVenda - subtotalCompra;
+
+            $row.find('.subtotal-compra-display').text('R$ ' + formatCurrencyForDisplay(subtotalCompra));
+            $row.find('.subtotal-venda-display').text('R$ ' + formatCurrencyForDisplay(subtotalVenda));
+            $row.find('.lucro-item-display').text('R$ ' + formatCurrencyForDisplay(lucroItem));
+        }
+    }
+
+    function updateAllTotals() {
+        var totalProdutosCompra = 0;
+        var totalProdutosVenda = 0;
+        $('.item-produto-form:not(:has(input[name$="-DELETE"]:checked))').each(function() {
+            var $row = $(this);
+            if ($row.is(":visible")) {
+                var qty = parseCurrency($row.find('input[name$="-quantidade"]').val());
+                var costPrice = parseCurrency($row.find('input[name$="-preco_compra_unitario_historico"]').val());
+                var sellPrice = parseCurrency($row.find('input[name$="-preco_venda_unitario_definido"]').val());
+
+                totalProdutosCompra += qty * costPrice;
+                totalProdutosVenda += qty * sellPrice;
+            }
+        });
+        $('#total-produtos-venda-display').text('R$ ' + formatCurrencyForDisplay(totalProdutosVenda));
+        $('#display-total-produtos-compra').text('R$ ' + formatCurrencyForDisplay(totalProdutosCompra));
+        $('#display-total-produtos-venda').text('R$ ' + formatCurrencyForDisplay(totalProdutosVenda));
+        $('#display-lucro-equipamentos').text('R$ ' + formatCurrencyForDisplay(totalProdutosVenda - totalProdutosCompra));
+
+        var totalMaoDeObra = 0;
+        $('.mao-de-obra-form:not(:has(input[name$="-DELETE"]:checked))').each(function() {
+             if ($(this).is(":visible")) {
+                totalMaoDeObra += parseCurrency($(this).find('input[name$="-valor"]').val());
+            }
+        });
+        $('#total-mao-de-obra-display').text('R$ ' + formatCurrencyForDisplay(totalMaoDeObra));
+        $('#display-total-mao-de-obra').text('R$ ' + formatCurrencyForDisplay(totalMaoDeObra));
+
+        var totalInsumos = 0;
+        $('.insumo-form:not(:has(input[name$="-DELETE"]:checked))').each(function() {
+             if ($(this).is(":visible")) {
+                totalInsumos += parseCurrency($(this).find('input[name$="-valor"]').val());
+            }
+        });
+        $('#total-insumos-display').text('R$ ' + formatCurrencyForDisplay(totalInsumos));
+        $('#display-total-insumos').text('R$ ' + formatCurrencyForDisplay(totalInsumos));
+
+        var valorTotalOrcamento = totalProdutosVenda + totalMaoDeObra;
+        var lucroBruto = (totalProdutosVenda + totalMaoDeObra) - totalProdutosCompra;
+        var lucroLiquido = lucroBruto - totalInsumos;
+
+        $('#display-valor-total-orcamento').text('R$ ' + formatCurrencyForDisplay(valorTotalOrcamento));
+        $('#display-lucro-bruto').text('R$ ' + formatCurrencyForDisplay(lucroBruto));
+        $('#display-lucro-liquido').text('R$ ' + formatCurrencyForDisplay(lucroLiquido));
+    }
+
+    $('.item-produto-form input.item-calc').trigger('input');
+    $('.mao-de-obra-form input.item-calc').trigger('input');
+    $('.insumo-form input.item-calc').trigger('input');
+    updateAllTotals();
+
+
+    $('.formset-container').on('click', 'input[name$="-DELETE"]', function() {
+        var $row = $(this).closest('.formset-row');
+        if ($(this).is(':checked')) {
+            $row.fadeOut(function(){ updateAllTotals(); });
+        } else {
+            $row.fadeIn(function(){ updateAllTotals(); });
+        }
+    });
+
+    $('.formset-container .formset-row').each(function(){
+        var $row = $(this);
+        var $deleteCheckbox = $row.find('input[name$="-DELETE"]');
+        if ($deleteCheckbox.length && $deleteCheckbox.is(':checked')) {
+            $row.hide();
+        }
+    });
+});
+</script>
+{% endblock %}

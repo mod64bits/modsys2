@@ -7,9 +7,9 @@ from django.utils.translation import gettext_lazy as _
 from django.db.models.signals import post_save, post_delete
 from django.dispatch import receiver
 
-from customers.models import Customer
-from inventory.models import Produto
-from django.contrib.auth.models import User
+from apps.customers.models import Customer
+from apps.inventory.models import Produto
+from django.conf import settings
 
 
 class Orcamento(models.Model):
@@ -82,7 +82,8 @@ class Orcamento(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     created_by = models.ForeignKey(
-        User,
+
+        settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,
         null=True, blank=True,
         related_name='orcamentos_criados',

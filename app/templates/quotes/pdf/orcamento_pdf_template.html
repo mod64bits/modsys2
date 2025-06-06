@@ -1,10 +1,151 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <title>Title</title>
+    <title>Orçamento #{{ orcamento.id }}</title>
+    <style>
+        @page {
+            size: a4 portrait;
+            margin: 1.5cm 1.5cm 2cm 1.5cm; /* margem inferior maior para footer */
+            @frame header_frame {
+                -pdf-frame-content: header_content;
+                left: 50pt; width: 512pt; top: 20pt; height: 60pt;
+            }
+            @frame footer_frame {
+                -pdf-frame-content: footer_content;
+                left: 50pt; width: 512pt; bottom: 30pt; height: 50pt; /* Usando bottom */
+            }
+        }
+        body { font-family: "Helvetica", "Arial", sans-serif; font-size: 10pt; color: #333333; line-height: 1.4; }
+        h1 { text-align: center; font-size: 18pt; margin-bottom: 10mm; color: #2c3e50; border-bottom: 2px solid #3498db; padding-bottom: 3mm;}
+        h2 { font-size: 13pt; margin-top: 8mm; margin-bottom: 4mm; color: #3498db; border-bottom: 1px solid #bdc3c7; padding-bottom: 2mm;}
+        table { width: 100%; border-collapse: collapse; margin-bottom: 5mm; font-size: 9pt; page-break-inside: auto; }
+        tr { page-break-inside: avoid; page-break-after: auto; }
+        th, td { border: 1px solid #dddddd; padding: 2.5mm; text-align: left; vertical-align: top; }
+        th { background-color: #ecf0f1; font-weight: bold; color: #2c3e50; }
+        .footer { text-align: center; font-size: 8pt; color: #7f8c8d; }
+        .header { font-size: 9pt; color: #34495e; }
+        .header strong { font-size: 12pt; color: #2980b9;}
+        .company-details { text-align: right; font-size: 8pt; }
+        .customer-details p, .orcamento-details p { margin: 1mm 0; }
+        .total-section { margin-top: 10mm; text-align: right; }
+        .total-section strong { font-size: 12pt; }
+        .item-table td.qty, .item-table td.price, .item-table td.subtotal { text-align: right; }
+        .item-table th.qty, .item-table th.price, .item-table th.subtotal { text-align: right; }
+        .terms p { margin: 1mm 0; font-size: 9pt;}
+        .signature-area { margin-top: 20mm; padding-top:10mm; border-top: 1px dotted #bdc3c7; font-size: 9pt;}
+        .signature-line { display: inline-block; width: 60%; border-bottom: 1px solid #333; margin-top:15mm; margin-bottom: 2mm;}
+    </style>
 </head>
 <body>
+    <div id="header_content" class="header">
+        <strong>{{ company_name|default:"Sua Empresa LTDA" }}</strong><br>
+        Rua Exemplo, 123 - Bairro Exemplo - Cidade/UF<br>
+        Telefone: (00) 0000-0000 | Email: contato@suaempresa.com
+        <div style="float: right; text-align: right;">
+            <strong>Orçamento Nº: {{ orcamento.id }}</strong><br>
+            Data: {{ orcamento.created_at|date:"d/m/Y" }}<br>
+            {% if orcamento.validade %}Validade: {{ orcamento.validade|date:"d/m/Y" }}{% endif %}
+        </div>
+    </div>
+    <div id="footer_content" class="footer">
+        {{ company_name|default:"Sua Empresa" }} - Todos os direitos reservados.<br>
+        Página <pdf:pagenumber /> de <pdf:pagecount />
+    </div>
+
+    <h1>Proposta de Orçamento</h1>
+
+    <div class="customer-details">
+        <h2>Dados do Cliente</h2>
+        <p><strong>Cliente:</strong> {{ orcamento.cliente.nome }}</p>
+        <p><strong>Documento:</strong> {{ orcamento.cliente.get_tipo_documento_display }}: {{ orcamento.cliente.documento|default:"Não informado" }}</p>
+        <p><strong>Email:</strong> {{ orcamento.cliente.email|default:"Não informado" }}</p>
+        <p><strong>Telefone:</strong> {{ orcamento.cliente.telefone|default:"Não informado" }}</p>
+        {% if orcamento.cliente.endereco_logradouro %}
+        <p><strong>Endereço:</strong> {{ orcamento.cliente.endereco_logradouro }}, {{ orcamento.cliente.endereco_numero|default:"" }} - {{ orcamento.cliente.endereco_bairro|default:"" }}. {{ orcamento.cliente.endereco_cidade }}/{{ orcamento.cliente.endereco_estado }}. CEP: {{ orcamento.cliente.endereco_cep|default:"" }}</p>
+        {% endif %}
+    </div>
+
+    {% if orcamento.descricao_geral %}
+    <h2>Descrição Geral</h2>
+    <p>{{ orcamento.descricao_geral|linebreaksbr }}</p>
+    {% endif %}
+
+    {% if orcamento.itens_produto.all %}
+    <h2>Produtos</h2>
+    <table class="item-table">
+        <thead>
+            <tr>
+                <th>Item</th>
+                <th>Descrição</th>
+                <th class="qty">Qtd.</th>
+                <th class="price">Preço Unit. (R$)</th>
+                <th class="subtotal">Subtotal (R$)</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in orcamento.itens_produto.all %}
+            <tr>
+                <td>{{ forloop.counter }}</td>
+                <td>{{ item.produto.nome }} {% if item.produto.fabricante %}({{ item.produto.fabricante }}){% endif %}</td>
+                <td class="qty">{{ item.quantidade|floatformat:2 }}</td>
+                <td class="price">{{ item.get_preco_venda_unitario_calculado|floatformat:2 }}</td>
+                <td class="subtotal">{{ item.get_subtotal_venda|floatformat:2 }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% endif %}
+
+    {% if orcamento.itens_mao_de_obra.all %}
+    <h2>Serviços / Mão de Obra</h2>
+    <table class="item-table">
+        <thead>
+            <tr>
+                <th>Item</th>
+                <th>Descrição do Serviço</th>
+                <th class="subtotal">Valor (R$)</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item_mo in orcamento.itens_mao_de_obra.all %}
+            <tr>
+                <td>{{ forloop.counter }}</td>
+                <td>{{ item_mo.get_tipo_display }} - {{ item_mo.descricao }}</td>
+                <td class="subtotal">{{ item_mo.valor|floatformat:2 }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% endif %}
+
+    <div class="total-section">
+        {% if orcamento.itens_produto.all %}<p>Total Produtos: R$ {{ orcamento.total_produtos_venda|floatformat:2 }}</p>{% endif %}
+        {% if orcamento.itens_mao_de_obra.all %}<p>Total Mão de Obra: R$ {{ orcamento.total_mao_de_obra|floatformat:2 }}</p>{% endif %}
+        <p><strong>Valor Total do Orçamento: R$ {{ orcamento.valor_total_orcamento|floatformat:2 }}</strong></p>
+    </div>
+
+    {% if orcamento.informacoes_adicionais %}
+        {% with info=orcamento.informacoes_adicionais %}
+        <div class="terms">
+            {% if info.condicoes_pagamento %}<h2>Condições de Pagamento</h2><p>{{ info.condicoes_pagamento|linebreaksbr }}</p>{% endif %}
+            {% if info.prazo_entrega_instalacao %}<h2>Prazo de Entrega/Instalação</h2><p>{{ info.prazo_entrega_instalacao }}</p>{% endif %}
+            {% if info.garantia %}<h2>Garantia</h2><p>{{ info.garantia|linebreaksbr }}</p>{% endif %}
+        </div>
+        {% endwith %}
+    {% endif %}
+
+    <div class="signature-area">
+        <p>De acordo,</p>
+        <p><span class="signature-line"></span><br>
+        {{ orcamento.cliente.nome }}
+        </p>
+
+        <p style="margin-top:15mm;">
+        <span class="signature-line"></span><br>
+        {{ company_name|default:"Sua Empresa LTDA" }}
+        </p>
+    </div>
 
 </body>
 </html>

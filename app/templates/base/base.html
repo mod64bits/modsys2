@@ -3,7 +3,7 @@
 <html lang="pt-br">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale-1">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{% block title %}Service Desk App{% endblock %} | AdminLTE 3</title>
 
   <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700&display=fallback">
@@ -30,9 +30,8 @@
     .nav-tabs .nav-link.active {
         border-bottom: 2px solid #007bff;
     }
-    /* Para garantir que o select2 funcione bem dentro de modais */
     .select2-container--open {
-        z-index: 10055 !important; /* Acima do modal backdrop (1050 por padrão) */
+        z-index: 10055 !important;
     }
   </style>
 </head>
@@ -103,6 +102,12 @@
             <a href="{% url 'customers:customer_list' %}" class="nav-link {% if request.resolver_match.app_name == 'customers' %}active{% endif %}">
               <i class="nav-icon fas fa-users"></i>
               <p>Clientes</p>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a href="{% url 'quotes:orcamento_list' %}" class="nav-link {% if request.resolver_match.app_name == 'quotes' %}active{% endif %}">
+              <i class="nav-icon fas fa-file-invoice-dollar"></i>
+              <p>Orçamentos</p>
             </a>
           </li>
           <li class="nav-item">
@@ -203,7 +208,7 @@
   </footer>
 </div>
 <div class="modal fade" id="ajaxModal" tabindex="-1" role="dialog" aria-labelledby="ajaxModalLabel" aria-hidden="true">
-  <div class="modal-dialog modal-lg" role="document"> <div class="modal-content">
+  <div class="modal-dialog modal-xl" role="document"> <div class="modal-content">
       </div>
   </div>
 </div>
@@ -218,12 +223,15 @@
 <script src="{% static 'adminlte/plugins/jquery/jquery.min.js' %}"></script>
 <script src="{% static 'adminlte/plugins/bootstrap/js/bootstrap.bundle.min.js' %}"></script>
 <script src="{% static 'adminlte/dist/js/adminlte.min.js' %}"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
 
 <script>
 $(document).ready(function() {
-    var originalModalContent = null; // Para guardar o conteúdo do modal original (ex: ProdutoForm)
-    var originalModalUrl = null; // Para guardar a URL do modal original
-    var targetSelectName = null; // Para guardar o nome do select a ser atualizado
+    var originalModalContent = null;
+    var originalModalUrl = null;
+    var targetSelectName = null;
+    var lastOpenedModalUrl = null; // Para saber qual modal principal reabrir
 
     function showLoading() {
         $('#loadingOverlay').fadeIn(100);
@@ -233,22 +241,38 @@ $(document).ready(function() {
         $('#loadingOverlay').fadeOut(100);
     }
 
+    // Função para inicializar Select2 em um contexto específico
+    function initializeSelect2InContext(context) {
+        $(context).find('.select2-field').select2({
+            theme: 'bootstrap4',
+            width: '100%',
+            placeholder: "Selecione...",
+            allowClear: true,
+            dropdownParent: $('#ajaxModal') // Garante que o dropdown apareça sobre o modal
+        });
+    }
+
     $(document).on('click', '[data-toggle="ajax-modal"]', function(event) {
         event.preventDefault();
         var clickedElement = $(this);
         var url = clickedElement.data('url') || clickedElement.attr('href');
         var modalTarget = $(clickedElement.data('target') || '#ajaxModal');
 
-        // Verifica se é um botão de "quick create" (adicionar novo relacionado)
         if (clickedElement.hasClass('quick-create-related')) {
-            originalModalContent = modalTarget.find('.modal-content').html(); // Salva o conteúdo atual
-            originalModalUrl = modalTarget.find('form.ajax-form').attr('action'); // Salva a URL do form atual
-            targetSelectName = clickedElement.data('update-select'); // Pega o nome do select a ser atualizado
+            // Se o modal atual já tem um formulário, salva seu estado
+            if (modalTarget.find('form.ajax-form').length > 0) {
+                originalModalContent = modalTarget.find('.modal-content').html();
+                originalModalUrl = modalTarget.find('form.ajax-form').attr('action');
+            } else { // Se não tem form, talvez seja um modal de detalhe, pega a URL do botão que o abriu
+                originalModalUrl = lastOpenedModalUrl; // Tenta usar a URL do último modal principal aberto
+                originalModalContent = null; // Não podemos salvar o conteúdo de forma simples
+            }
+            targetSelectName = clickedElement.data('update-select');
         } else {
-            // Se não for quick-create, limpa o conteúdo salvo, pois é um novo fluxo principal
             originalModalContent = null;
             originalModalUrl = null;
             targetSelectName = null;
+            lastOpenedModalUrl = url; // Salva a URL do modal principal que está sendo aberto
         }
 
         if (clickedElement && clickedElement.length && typeof clickedElement.prop === 'function') {
@@ -261,6 +285,7 @@ $(document).ready(function() {
                 type: 'GET',
                 success: function(response) {
                     modalTarget.find('.modal-content').html(response);
+                    initializeSelect2InContext(modalTarget.find('.modal-content')); // Inicializa select2 no novo conteúdo
                     modalTarget.modal('show');
                 },
                 error: function(xhr, status, error) {
@@ -278,61 +303,66 @@ $(document).ready(function() {
     $(document).on('submit', '#ajaxModal form.ajax-form', function(event) {
         event.preventDefault();
         var form = $(this);
-        var url = form.attr('action');
+        var currentFormUrl = form.attr('action');
         var method = form.attr('method') || 'POST';
         var formData = new FormData(form[0]);
-        var modalTarget = form.closest('.modal'); // O modal atual (#ajaxModal)
+        var modalTarget = form.closest('.modal');
 
         modalTarget.find('.modal-body .alert-danger').remove();
         showLoading();
 
         $.ajax({
-            url: url,
+            url: currentFormUrl, // Usa a URL do formulário atual
             type: method,
             data: formData,
             processData: false,
             contentType: false,
             headers: {'X-Requested-With': 'XMLHttpRequest'},
             success: function(response) {
-                hideLoading(); // Esconde o loading antes de manipular o DOM
+                hideLoading();
                 if (response.success) {
-                    // Verifica se foi um "quick create" e se temos um select para atualizar
-                    if (targetSelectName && (response.fornecedor_id || response.categoria_id || response.customer_id)) {
+                    var isQuickCreate = (targetSelectName && (response.fornecedor_id || response.categoria_id || response.customer_id));
+
+                    if (isQuickCreate) {
                         var newId, newName;
                         if (response.fornecedor_id) { newId = response.fornecedor_id; newName = response.fornecedor_name; }
                         else if (response.categoria_id) { newId = response.categoria_id; newName = response.categoria_name; }
                         else if (response.customer_id) { newId = response.customer_id; newName = response.customer_name; }
 
-                        // Fecha o modal de "quick create"
                         modalTarget.modal('hide');
 
-                        // Restaura o conteúdo do modal original (ex: ProdutoForm)
-                        // E então atualiza o select.
-                        // É importante que o #ajaxModal seja o mesmo container.
-                        if (originalModalContent && originalModalUrl) {
-                             // Encontra o select no conteúdo original salvo ou recarrega o form original
-                            var $originalFormContainer = $('<div>').html(originalModalContent);
-                            var $selectToUpdate = $originalFormContainer.find('select[name="' + targetSelectName + '"]');
+                        // Recarregar o modal original (pai) para obter o estado mais recente do formulário
+                        // e então atualizar o select.
+                        var urlToReloadOriginal = originalModalUrl || lastOpenedModalUrl;
 
-                            if ($selectToUpdate.length) {
-                                if (!$selectToUpdate.find('option[value="' + newId + '"]').length) {
-                                    $selectToUpdate.append($('<option>', { value: newId, text: newName }));
-                                }
-                                $selectToUpdate.val(newId);
-                                // Se estiver usando Select2, precisa reinicializar ou dar trigger('change') nele
-                                // if($.fn.select2 && $selectToUpdate.data('select2')) { $selectToUpdate.trigger('change'); }
-                            }
-                            // Coloca o conteúdo original de volta no modal e o reabre
-                            $('#ajaxModal').find('.modal-content').html($originalFormContainer.html());
-                            $('#ajaxModal').modal('show'); // Reabre o modal principal
+                        if (urlToReloadOriginal) {
+                            showLoading();
+                            $.ajax({
+                                url: urlToReloadOriginal,
+                                type: 'GET',
+                                success: function(originalResponse) {
+                                    $('#ajaxModal').find('.modal-content').html(originalResponse);
+                                    initializeSelect2InContext($('#ajaxModal').find('.modal-content'));
+
+                                    var $selectToUpdate = $('#ajaxModal').find('select[name="' + targetSelectName + '"]');
+                                    if ($selectToUpdate.length) {
+                                        if (!$selectToUpdate.find('option[value="' + newId + '"]').length) {
+                                            $selectToUpdate.append($('<option>', { value: newId, text: newName }));
+                                        }
+                                        $selectToUpdate.val(newId).trigger('change'); // Trigger change para Select2
+                                    }
+                                    $('#ajaxModal').modal('show');
+                                },
+                                error: function() { alert("Erro ao recarregar o formulário original."); },
+                                complete: function() { hideLoading(); }
+                            });
                         }
 
-                        // Limpa as variáveis de estado do quick create
                         originalModalContent = null;
                         originalModalUrl = null;
                         targetSelectName = null;
 
-                    } else { // Submissão de formulário principal (não quick create)
+                    } else {
                         modalTarget.modal('hide');
                         if (response.message) {
                             $('.content .container-fluid').prepend(
@@ -345,11 +375,20 @@ $(document).ready(function() {
                             if (typeof filterForm !== 'undefined' && $('#filterForm').length) {
                                 $('#filterForm').submit();
                             } else {
-                                location.reload();
+                                // Se a URL atual for a de criação de orçamento, redireciona para o detalhe
+                                if (currentFormUrl.includes('quotes/new')) {
+                                   if(response.orcamento_pk) { // Supondo que a view de create retorna o PK do orçamento
+                                       window.location.href = "{% url 'quotes:orcamento_list' %}".slice(0, -1) + response.orcamento_pk + "/";
+                                   } else {
+                                       location.reload();
+                                   }
+                                } else {
+                                    location.reload();
+                                }
                             }
                         }, 300);
                     }
-                } else { // response.success === false
+                } else {
                     if (response.errors) {
                         var error_html = '<div class="alert alert-danger">Por favor, corrija os erros abaixo:<ul>';
                         var errorsObject = typeof response.errors === 'string' ? JSON.parse(response.errors) : response.errors;
@@ -387,23 +426,23 @@ $(document).ready(function() {
                 }
                 alert(errorMsg);
             }
-            // complete: function() { // Movido para dentro de success e error para melhor controle
-            //     hideLoading();
-            // }
         });
     });
 
     $('#ajaxModal').on('hidden.bs.modal', function () {
-        // Só limpa o conteúdo se não estivermos no meio de um quick create
-        // que precisa restaurar o conteúdo.
-        if (!originalModalContent) {
+        if (!originalModalContent && !targetSelectName) { // Só limpa se não estiver voltando de um quick create
             $(this).find('.modal-content').html('');
         }
         $(this).find('.modal-body .alert-danger').remove();
     });
+
+    // Para garantir que o Select2 funcione bem quando um modal é mostrado
+    $('#ajaxModal').on('shown.bs.modal', function () {
+        initializeSelect2InContext(this);
+    });
 });
 </script>
-
+<script src="{% static 'adminlte/plugins/jquery-mask-plugin/jquery.mask.js' %}"></script>
 {% block extrajs %}{% endblock %}
 </body>
 </html>
