@@ -301,7 +301,7 @@ def ticket_pdf_view(request, pk):
     context = {
         'ticket': ticket,
         'work_orders': work_orders,
-        'company_name': 'Nome da Sua Empresa Aqui' # Você pode pegar isso das configurações ou de um modelo
+        'company_name': 'mod64bits' # Você pode pegar isso das configurações ou de um modelo
     }
     pdf = render_to_pdf('servicedesk/pdf/ticket_pdf_template.html', context)
     if pdf:
@@ -318,7 +318,7 @@ def work_order_pdf_view(request, pk):
     work_order = get_object_or_404(WorkOrder, pk=pk)
     context = {
         'work_order': work_order,
-        'company_name': 'Nome da Sua Empresa Aqui'
+        'company_name': 'mod64bits'
     }
     pdf = render_to_pdf('servicedesk/pdf/work_order_pdf_template.html', context)
     if pdf:
