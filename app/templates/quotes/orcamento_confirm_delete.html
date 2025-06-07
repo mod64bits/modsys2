@@ -1,0 +1,24 @@
+{% extends "base/base.html" %}
+{% load static %}
+
+{% block title %}{{ page_title }}{% endblock %}
+{% block page_title %}{{ page_title }}{% endblock %}
+
+{% block content %}
+<div class="card card-danger card-outline">
+    <div class="card-header">
+        <h3 class="card-title">Confirmar Exclusão</h3>
+    </div>
+    <div class="card-body">
+        <p>Você tem certeza que deseja excluir o <strong>Orçamento #{{ orcamento.id }}</strong> para o cliente <strong>{{ orcamento.cliente.nome }}</strong>?</p>
+        <p class="text-danger">Esta ação não poderá ser desfeita.</p>
+    </div>
+    <div class="card-footer">
+        <form method="post">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-danger">Sim, Excluir Orçamento</button>
+            <a href="{% url 'quotes:orcamento_detail' orcamento.pk %}" class="btn btn-secondary">Cancelar</a>
+        </form>
+    </div>
+</div>
+{% endblock %}

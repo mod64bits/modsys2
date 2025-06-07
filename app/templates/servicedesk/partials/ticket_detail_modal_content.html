@@ -16,7 +16,6 @@
         <dd class="col-sm-8">
             {% if ticket.customer %}
                 <a href="#"
-                   data-dismiss="modal"
                    data-toggle="ajax-modal"
                    data-target="#ajaxModal"
                    data-url="{% url 'customers:customer_detail_modal' ticket.customer.pk %}">
@@ -28,13 +27,13 @@
         </dd>
 
         <dt class="col-sm-4">Descrição:</dt>
-        <dd class="col-sm-8" style="white-space: pre-wrap;">{{ ticket.description }}</dd>
+        <dd class="col-sm-8" style="white-space: pre-wrap;">{{ ticket.description|linebreaksbr }}</dd>
 
         <dt class="col-sm-4">Status:</dt>
-        <dd class="col-sm-8"><span class="badge {% if ticket.status == 'ABERTO' %}badge-danger{% elif ticket.status == 'EM_ANDAMENTO' %}badge-warning{% elif ticket.status == 'RESOLVIDO' %}badge-success{% elif ticket.status == 'FECHADO' %}badge-secondary{% else %}badge-info{% endif %}">{{ ticket.get_status_display }}</span></dd>
+        <dd class="col-sm-8"><span class="badge badge-{% if ticket.status == 'ABERTO' %}danger{% elif ticket.status == 'EM_ANDAMENTO' %}warning{% elif ticket.status == 'RESOLVIDO' %}success{% elif ticket.status == 'FECHADO' %}secondary{% else %}info{% endif %}">{{ ticket.get_status_display }}</span></dd>
 
         <dt class="col-sm-4">Prioridade:</dt>
-        <dd class="col-sm-8"><span class="badge {% if ticket.priority == 'ALTA' or ticket.priority == 'URGENTE' %}badge-danger{% elif ticket.priority == 'MEDIA' %}badge-warning{% else %}badge-primary{% endif %}">{{ ticket.get_priority_display }}</span></dd>
+        <dd class="col-sm-8"><span class="badge badge-{% if ticket.priority == 'ALTA' or ticket.priority == 'URGENTE' %}danger{% elif ticket.priority == 'MEDIA' %}warning{% else %}primary{% endif %}">{{ ticket.get_priority_display }}</span></dd>
 
         <dt class="col-sm-4">Criado Por:</dt>
         <dd class="col-sm-8">{{ ticket.created_by.username|default:"N/A" }}</dd>
@@ -47,21 +46,6 @@
 
         <dt class="col-sm-4">Última Atualização:</dt>
         <dd class="col-sm-8">{{ ticket.updated_at|date:"d/m/Y H:i:s" }}</dd>
-
-        {% if ticket.category %}
-        <dt class="col-sm-4">Categoria:</dt>
-        <dd class="col-sm-8">{{ ticket.category.name|default:"N/A" }}</dd>
-        {% endif %}
-
-        {% if ticket.resolution_details %}
-        <dt class="col-sm-4">Detalhes da Resolução:</dt>
-        <dd class="col-sm-8" style="white-space: pre-wrap;">{{ ticket.resolution_details }}</dd>
-        {% endif %}
-
-        {% if ticket.closed_at %}
-        <dt class="col-sm-4">Data de Fechamento:</dt>
-        <dd class="col-sm-8">{{ ticket.closed_at|date:"d/m/Y H:i:s" }}</dd>
-        {% endif %}
     </dl>
 
     <hr>
@@ -73,7 +57,6 @@
                     <p class="mb-1">
                         <strong>
                              <a href="#"
-                                data-dismiss="modal"
                                 data-toggle="ajax-modal"
                                 data-target="#ajaxModal"
                                 data-url="{% url 'servicedesk:work_order_detail_modal' wo.pk %}">
@@ -87,7 +70,6 @@
                          <span class="float-right">
                             {% if wo.status not in "CONCLUIDA,CANCELADA" %}
                             <button type="button" class="btn btn-xs btn-outline-warning py-0 px-1"
-                                    data-dismiss="modal"
                                     data-toggle="ajax-modal"
                                     data-target="#ajaxModal"
                                     data-url="{% url 'servicedesk:work_order_update_modal' wo.pk %}"
@@ -95,16 +77,13 @@
                                 <i class="fas fa-edit fa-xs"></i>
                             </button>
                             {% endif %}
-                            {% if wo.status not in "CONCLUIDA,CANCELADA" %}
                             <button type="button" class="btn btn-xs btn-outline-danger py-0 px-1"
-                                    data-dismiss="modal"
                                     data-toggle="ajax-modal"
                                     data-target="#ajaxModal"
                                     data-url="{% url 'servicedesk:work_order_delete_modal' wo.pk %}"
                                     title="Excluir OS">
                                 <i class="fas fa-trash fa-xs"></i>
                             </button>
-                            {% endif %}
                         </span>
                     </p>
                 </div>
@@ -117,7 +96,6 @@
     {% endif %}
     {% if ticket.status not in "FECHADO,RESOLVIDO" %}
     <button type="button" class="btn btn-sm btn-success mt-2"
-            data-dismiss="modal"
             data-toggle="ajax-modal"
             data-target="#ajaxModal"
             data-url="{% url 'servicedesk:work_order_create_modal' %}?ticket_id={{ ticket.pk }}">
@@ -133,7 +111,6 @@
     <button type="button" class="btn btn-secondary" data-dismiss="modal">Fechar</button>
     {% if ticket.status not in "FECHADO,RESOLVIDO" %}
     <button type="button" class="btn btn-warning"
-            data-dismiss="modal"
             data-toggle="ajax-modal"
             data-target="#ajaxModal"
             data-url="{% url 'servicedesk:ticket_update_modal' ticket.pk %}">

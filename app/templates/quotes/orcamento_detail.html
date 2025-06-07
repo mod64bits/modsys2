@@ -1,0 +1,120 @@
+{% extends "base/base.html" %}
+{% load static %}
+{% load i18n %}
+
+{% block title %}{{ page_title }}{% endblock %}
+{% block page_title %}{{ page_title }}{% endblock %}
+
+{% block content %}
+<div class="card card-primary card-outline">
+    <div class="card-header">
+        <h3 class="card-title">Orçamento #{{ orcamento.id }} - {{ orcamento.cliente.nome }}</h3>
+        <div class="card-tools">
+            <a href="{% url 'quotes:orcamento_pdf' orcamento.pk %}" target="_blank" class="btn btn-sm btn-secondary" title="Gerar PDF Cliente"><i class="fas fa-file-pdf"></i> PDF Cliente</a>
+            {% if orcamento.status not in "APROVADO,CONCLUIDO,CANCELADO,REPROVADO" %}
+            <a href="{% url 'quotes:orcamento_update' orcamento.pk %}" class="btn btn-sm btn-warning" title="Editar Orçamento"><i class="fas fa-edit"></i> Editar</a>
+            {% endif %}
+            {% if orcamento.status not in "APROVADO,CONCLUIDO" %}
+            <a href="{% url 'quotes:orcamento_delete' orcamento.pk %}" class="btn btn-sm btn-danger" title="Excluir Orçamento"><i class="fas fa-trash"></i> Excluir</a>
+            {% endif %}
+        </div>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-6">
+                <p><strong>Cliente:</strong> <a href="{% url 'customers:customer_detail_modal' orcamento.cliente.pk %}" data-toggle="ajax-modal" data-target="#ajaxModal">{{ orcamento.cliente.nome }}</a></p>
+                <p><strong>Status:</strong> <span class="badge badge-{% if orcamento.status == 'APROVADO' %}success{% elif orcamento.status == 'REPROVADO' or orcamento.status == 'CANCELADO' %}danger{% elif orcamento.status == 'EM_ANALISE' %}warning{% elif orcamento.status == 'CONCLUIDO'%}primary{% else %}secondary{% endif %}">{{ orcamento.get_status_display }}</span></p>
+                <p><strong>Validade:</strong> {{ orcamento.validade|date:"d/m/Y"|default:"Não definida" }}</p>
+                <p><strong>Criado por:</strong> {{ orcamento.created_by.username|default:"Sistema" }} em {{ orcamento.created_at|date:"d/m/Y H:i" }}</p>
+                <p><strong>Última Atualização:</strong> {{ orcamento.updated_at|date:"d/m/Y H:i" }}</p>
+            </div>
+            <div class="col-md-6">
+                <h4>Resumo Financeiro</h4>
+                <p><strong>Valor Total do Orçamento: <span class="text-primary font-weight-bold">R$ {{ orcamento.valor_total_orcamento|floatformat:2 }}</span></strong></p>
+                <p>Total Produtos (Venda): R$ {{ orcamento.total_produtos_venda|floatformat:2 }}</p>
+                <p>Total Mão de Obra: R$ {{ orcamento.total_mao_de_obra|floatformat:2 }}</p>
+                <hr>
+                <p>Custo Total Produtos: R$ {{ orcamento.total_produtos_compra|floatformat:2 }}</p>
+                <p>Lucro Equipamentos: R$ {{ orcamento.lucro_equipamentos|floatformat:2 }}</p>
+                <p>Total Insumos/Gastos: R$ {{ orcamento.total_insumos|floatformat:2 }}</p>
+                <p><strong>Lucro Total Bruto: <span class="text-success">R$ {{ orcamento.lucro_total_bruto|floatformat:2 }}</span></strong></p>
+                <p><strong>Lucro Total Líquido: <span class="text-info">R$ {{ orcamento.lucro_total_liquido|floatformat:2 }}</span></strong></p>
+            </div>
+        </div>
+        {% if orcamento.descricao_geral %}
+            <hr><h5>Descrição Geral / Observações</h5>
+            <p>{{ orcamento.descricao_geral|linebreaksbr }}</p>
+        {% endif %}
+
+        {% if informacoes %}
+            <hr><h5>Informações Adicionais</h5>
+            {% if informacoes.condicoes_pagamento %}<p><strong>Cond. Pagamento:</strong> {{ informacoes.condicoes_pagamento|linebreaksbr }}</p>{% endif %}
+            {% if informacoes.prazo_entrega_instalacao %}<p><strong>Prazo Entrega/Instalação:</strong> {{ informacoes.prazo_entrega_instalacao }}</p>{% endif %}
+            {% if informacoes.garantia %}<p><strong>Garantia:</strong> {{ informacoes.garantia|linebreaksbr }}</p>{% endif %}
+        {% endif %}
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-12">
+        <div class="card card-info card-outline mt-3">
+            <div class="card-header"><h3 class="card-title">Itens de Produto ({{ itens_produto.count }})</h3></div>
+            <div class="card-body p-0">
+                {% if itens_produto %}
+                <table class="table table-sm">
+                    <thead><tr><th>Produto</th><th>Qtd</th><th>Custo Unit.</th><th>Venda Unit.</th><th>Markup %</th><th>Subtotal Compra</th><th>Subtotal Venda</th><th>Lucro Item</th></tr></thead>
+                    <tbody>
+                    {% for item in itens_produto %}
+                        <tr>
+                            <td>{{ item.produto.nome }}</td>
+                            <td>{{ item.quantidade|floatformat:2 }}</td>
+                            <td>R$ {{ item.preco_compra_unitario_historico|floatformat:2 }}</td>
+                            <td>R$ {{ item.get_preco_venda_unitario_calculado|floatformat:2 }}</td>
+                            <td>{{ item.porcentagem_markup|floatformat:2|default:"-" }}%</td>
+                            <td>R$ {{ item.get_subtotal_compra|floatformat:2 }}</td>
+                            <td>R$ {{ item.get_subtotal_venda|floatformat:2 }}</td>
+                            <td>R$ {{ item.get_lucro_item|floatformat:2 }}</td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+                {% else %}<p class="p-3">Nenhum produto adicionado.</p>{% endif %}
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card card-info card-outline mt-3">
+            <div class="card-header"><h3 class="card-title">Itens de Mão de Obra ({{ itens_mao_de_obra.count }})</h3></div>
+            <div class="card-body p-0">
+                {% if itens_mao_de_obra %}
+                <table class="table table-sm">
+                    <thead><tr><th>Tipo</th><th>Descrição</th><th>Valor</th></tr></thead>
+                    <tbody>
+                    {% for item in itens_mao_de_obra %}
+                        <tr><td>{{ item.get_tipo_display }}</td><td>{{ item.descricao }}</td><td>R$ {{ item.valor|floatformat:2 }}</td></tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+                {% else %}<p class="p-3">Nenhum serviço de mão de obra adicionado.</p>{% endif %}
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+         <div class="card card-warning card-outline mt-3">
+            <div class="card-header"><h3 class="card-title">Insumos / Gastos Adicionais ({{ insumos.count }})</h3></div>
+            <div class="card-body p-0">
+                {% if insumos %}
+                <table class="table table-sm">
+                    <thead><tr><th>Data</th><th>Descrição</th><th>Valor</th></tr></thead>
+                    <tbody>
+                    {% for item in insumos %}
+                        <tr><td>{{ item.data_gasto|date:"d/m/Y" }}</td><td>{{ item.descricao }}</td><td>R$ {{ item.valor|floatformat:2 }}</td></tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+                {% else %}<p class="p-3">Nenhum insumo/gasto adicionado.</p>{% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

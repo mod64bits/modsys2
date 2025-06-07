@@ -1,0 +1,39 @@
+<div class="modal-header">
+    <h5 class="modal-title">{{ detail_title }}</h5>
+    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+</div>
+<div class="modal-body">
+    <dl class="row">
+        <dt class="col-sm-3">Nome:</dt><dd class="col-sm-9">{{ fornecedor.nome }}</dd>
+        <dt class="col-sm-3">Documento:</dt><dd class="col-sm-9">{{ fornecedor.documento|default:"-" }}</dd>
+        <dt class="col-sm-3">Telefone:</dt><dd class="col-sm-9">{{ fornecedor.telefone|default:"-" }}</dd>
+        <dt class="col-sm-3">E-mail:</dt><dd class="col-sm-9">{{ fornecedor.email|default:"-" }}</dd>
+    </dl>
+    {% if fornecedor.endereco_logradouro %}
+    <hr><h6>Endereço</h6>
+    <dl class="row">
+        <dt class="col-sm-3">Logradouro:</dt><dd class="col-sm-9">{{ fornecedor.endereco_logradouro }} {{ fornecedor.endereco_numero|default:"" }}</dd>
+        <dt class="col-sm-3">Complemento:</dt><dd class="col-sm-9">{{ fornecedor.endereco_complemento|default:"-" }}</dd>
+        <dt class="col-sm-3">Bairro:</dt><dd class="col-sm-9">{{ fornecedor.endereco_bairro|default:"-" }}</dd>
+        <dt class="col-sm-3">Cidade/UF:</dt><dd class="col-sm-9">{{ fornecedor.endereco_cidade|default:"-" }}/{{ fornecedor.endereco_estado|default:"-" }}</dd>
+        <dt class="col-sm-3">CEP:</dt><dd class="col-sm-9">{{ fornecedor.endereco_cep|default:"-" }}</dd>
+    </dl>
+    {% endif %}
+    {% if produtos_fornecidos %}
+    <hr><h6>Produtos Fornecidos ({{ produtos_fornecidos.count }})</h6>
+    <ul class="list-group list-group-flush" style="max-height: 150px; overflow-y: auto;">
+        {% for produto in produtos_fornecidos %}
+        <li class="list-group-item py-1">
+            <a href="#" data-dismiss="modal" data-toggle="ajax-modal" data-target="#ajaxModal" data-url="{% url 'inventory:produto_detail_modal' produto.pk %}">
+            {{ produto.nome }}
+            </a>
+            <small class="text-muted"> ({{ produto.fabricante|default:"Sem fabricante" }})</small>
+        </li>
+        {% endfor %}
+    </ul>
+    {% endif %}
+</div>
+<div class="modal-footer">
+    <button type="button" class="btn btn-secondary" data-dismiss="modal">Fechar</button>
+    <button type="button" class="btn btn-warning" data-dismiss="modal" data-toggle="ajax-modal" data-target="#ajaxModal" data-url="{% url 'inventory:fornecedor_update_modal' fornecedor.pk %}"><i class="fas fa-edit"></i> Editar</button>
+</div>

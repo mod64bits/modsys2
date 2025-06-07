@@ -30,6 +30,9 @@
     .nav-tabs .nav-link.active {
         border-bottom: 2px solid #007bff;
     }
+    .select2-container--open {
+        z-index: 10055 !important;
+    }
   </style>
 </head>
 <body class="hold-transition sidebar-mini">
@@ -94,11 +97,17 @@
 
       <nav class="mt-2">
         <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu" data-accordion="false">
-          {% if user.is_authenticated %} {# Mostrar itens do menu apenas se autenticado #}
+          {% if user.is_authenticated %}
           <li class="nav-item">
             <a href="{% url 'customers:customer_list' %}" class="nav-link {% if request.resolver_match.app_name == 'customers' %}active{% endif %}">
               <i class="nav-icon fas fa-users"></i>
               <p>Clientes</p>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a href="{% url 'quotes:orcamento_list' %}" class="nav-link {% if request.resolver_match.app_name == 'quotes' %}active{% endif %}">
+              <i class="nav-icon fas fa-file-invoice-dollar"></i>
+              <p>Orçamentos</p>
             </a>
           </li>
           <li class="nav-item">
@@ -112,6 +121,35 @@
               <i class="nav-icon fas fa-tools"></i>
               <p>Ordens de Serviço</p>
             </a>
+          </li>
+           <li class="nav-item {% if request.resolver_match.app_name == 'inventory' %}menu-open{% endif %}">
+            <a href="#" class="nav-link {% if request.resolver_match.app_name == 'inventory' %}active{% endif %}">
+              <i class="nav-icon fas fa-boxes"></i>
+              <p>
+                Inventário
+                <i class="right fas fa-angle-left"></i>
+              </p>
+            </a>
+            <ul class="nav nav-treeview">
+              <li class="nav-item">
+                <a href="{% url 'inventory:produto_list' %}" class="nav-link {% if request.resolver_match.url_name == 'produto_list' %}active{% endif %}">
+                  <i class="far fa-circle nav-icon"></i>
+                  <p>Produtos</p>
+                </a>
+              </li>
+              <li class="nav-item">
+                <a href="{% url 'inventory:categoriaproduto_list' %}" class="nav-link {% if request.resolver_match.url_name == 'categoriaproduto_list' %}active{% endif %}">
+                  <i class="far fa-circle nav-icon"></i>
+                  <p>Categorias</p>
+                </a>
+              </li>
+              <li class="nav-item">
+                <a href="{% url 'inventory:fornecedor_list' %}" class="nav-link {% if request.resolver_match.url_name == 'fornecedor_list' %}active{% endif %}">
+                  <i class="far fa-circle nav-icon"></i>
+                  <p>Fornecedores</p>
+                </a>
+              </li>
+            </ul>
           </li>
           <li class="nav-item">
             <a href="{% url 'reports:report_filter_page' %}" class="nav-link {% if request.resolver_match.app_name == 'reports' %}active{% endif %}">
@@ -170,7 +208,7 @@
   </footer>
 </div>
 <div class="modal fade" id="ajaxModal" tabindex="-1" role="dialog" aria-labelledby="ajaxModalLabel" aria-hidden="true">
-  <div class="modal-dialog modal-lg" role="document"> <div class="modal-content">
+  <div class="modal-dialog modal-xl" role="document"> <div class="modal-content">
       </div>
   </div>
 </div>
@@ -185,9 +223,16 @@
 <script src="{% static 'adminlte/plugins/jquery/jquery.min.js' %}"></script>
 <script src="{% static 'adminlte/plugins/bootstrap/js/bootstrap.bundle.min.js' %}"></script>
 <script src="{% static 'adminlte/dist/js/adminlte.min.js' %}"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
 
 <script>
 $(document).ready(function() {
+    var originalModalContent = null;
+    var originalModalUrl = null;
+    var targetSelectName = null;
+    var lastOpenedModalUrl = null; // Para saber qual modal principal reabrir
+
     function showLoading() {
         $('#loadingOverlay').fadeIn(100);
     }
@@ -196,22 +241,51 @@ $(document).ready(function() {
         $('#loadingOverlay').fadeOut(100);
     }
 
+    // Função para inicializar Select2 em um contexto específico
+    function initializeSelect2InContext(context) {
+        $(context).find('.select2-field').select2({
+            theme: 'bootstrap4',
+            width: '100%',
+            placeholder: "Selecione...",
+            allowClear: true,
+            dropdownParent: $('#ajaxModal') // Garante que o dropdown apareça sobre o modal
+        });
+    }
+
     $(document).on('click', '[data-toggle="ajax-modal"]', function(event) {
         event.preventDefault();
         var clickedElement = $(this);
+        var url = clickedElement.data('url') || clickedElement.attr('href');
+        var modalTarget = $(clickedElement.data('target') || '#ajaxModal');
+
+        if (clickedElement.hasClass('quick-create-related')) {
+            // Se o modal atual já tem um formulário, salva seu estado
+            if (modalTarget.find('form.ajax-form').length > 0) {
+                originalModalContent = modalTarget.find('.modal-content').html();
+                originalModalUrl = modalTarget.find('form.ajax-form').attr('action');
+            } else { // Se não tem form, talvez seja um modal de detalhe, pega a URL do botão que o abriu
+                originalModalUrl = lastOpenedModalUrl; // Tenta usar a URL do último modal principal aberto
+                originalModalContent = null; // Não podemos salvar o conteúdo de forma simples
+            }
+            targetSelectName = clickedElement.data('update-select');
+        } else {
+            originalModalContent = null;
+            originalModalUrl = null;
+            targetSelectName = null;
+            lastOpenedModalUrl = url; // Salva a URL do modal principal que está sendo aberto
+        }
 
         if (clickedElement && clickedElement.length && typeof clickedElement.prop === 'function') {
-            var url = clickedElement.data('url') || clickedElement.attr('href');
             if (!url || url === '#') {
                 return;
             }
-            var modalTarget = $(clickedElement.data('target') || '#ajaxModal');
             showLoading();
             $.ajax({
                 url: url,
                 type: 'GET',
                 success: function(response) {
                     modalTarget.find('.modal-content').html(response);
+                    initializeSelect2InContext(modalTarget.find('.modal-content')); // Inicializa select2 no novo conteúdo
                     modalTarget.modal('show');
                 },
                 error: function(xhr, status, error) {
@@ -229,7 +303,7 @@ $(document).ready(function() {
     $(document).on('submit', '#ajaxModal form.ajax-form', function(event) {
         event.preventDefault();
         var form = $(this);
-        var url = form.attr('action');
+        var currentFormUrl = form.attr('action');
         var method = form.attr('method') || 'POST';
         var formData = new FormData(form[0]);
         var modalTarget = form.closest('.modal');
@@ -238,40 +312,82 @@ $(document).ready(function() {
         showLoading();
 
         $.ajax({
-            url: url,
+            url: currentFormUrl, // Usa a URL do formulário atual
             type: method,
             data: formData,
             processData: false,
             contentType: false,
             headers: {'X-Requested-With': 'XMLHttpRequest'},
             success: function(response) {
+                hideLoading();
                 if (response.success) {
-                    modalTarget.modal('hide');
-                    if (response.message) {
-                        $('.content .container-fluid').prepend(
-                            '<div class="alert alert-success alert-dismissible fade show" role="alert">' +
-                            response.message +
-                            '<button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button></div>'
-                        );
-                    }
-                    if (response.customer_id && response.customer_name) {
-                        $('select[name="customer"]').each(function() {
-                            var $select = $(this);
-                            if (!$select.find('option[value="' + response.customer_id + '"]').length) {
-                                $select.append($('<option>', {
-                                    value: response.customer_id,
-                                    text: response.customer_name
-                                }));
-                            }
-                        });
-                    }
-                    setTimeout(function() {
-                        if (typeof filterForm !== 'undefined' && $('#filterForm').length) {
-                            $('#filterForm').submit();
-                        } else {
-                            location.reload();
+                    var isQuickCreate = (targetSelectName && (response.fornecedor_id || response.categoria_id || response.customer_id));
+
+                    if (isQuickCreate) {
+                        var newId, newName;
+                        if (response.fornecedor_id) { newId = response.fornecedor_id; newName = response.fornecedor_name; }
+                        else if (response.categoria_id) { newId = response.categoria_id; newName = response.categoria_name; }
+                        else if (response.customer_id) { newId = response.customer_id; newName = response.customer_name; }
+
+                        modalTarget.modal('hide');
+
+                        // Recarregar o modal original (pai) para obter o estado mais recente do formulário
+                        // e então atualizar o select.
+                        var urlToReloadOriginal = originalModalUrl || lastOpenedModalUrl;
+
+                        if (urlToReloadOriginal) {
+                            showLoading();
+                            $.ajax({
+                                url: urlToReloadOriginal,
+                                type: 'GET',
+                                success: function(originalResponse) {
+                                    $('#ajaxModal').find('.modal-content').html(originalResponse);
+                                    initializeSelect2InContext($('#ajaxModal').find('.modal-content'));
+
+                                    var $selectToUpdate = $('#ajaxModal').find('select[name="' + targetSelectName + '"]');
+                                    if ($selectToUpdate.length) {
+                                        if (!$selectToUpdate.find('option[value="' + newId + '"]').length) {
+                                            $selectToUpdate.append($('<option>', { value: newId, text: newName }));
+                                        }
+                                        $selectToUpdate.val(newId).trigger('change'); // Trigger change para Select2
+                                    }
+                                    $('#ajaxModal').modal('show');
+                                },
+                                error: function() { alert("Erro ao recarregar o formulário original."); },
+                                complete: function() { hideLoading(); }
+                            });
                         }
-                    }, 500);
+
+                        originalModalContent = null;
+                        originalModalUrl = null;
+                        targetSelectName = null;
+
+                    } else {
+                        modalTarget.modal('hide');
+                        if (response.message) {
+                            $('.content .container-fluid').prepend(
+                                '<div class="alert alert-success alert-dismissible fade show" role="alert">' +
+                                response.message +
+                                '<button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button></div>'
+                            );
+                        }
+                        setTimeout(function() {
+                            if (typeof filterForm !== 'undefined' && $('#filterForm').length) {
+                                $('#filterForm').submit();
+                            } else {
+                                // Se a URL atual for a de criação de orçamento, redireciona para o detalhe
+                                if (currentFormUrl.includes('quotes/new')) {
+                                   if(response.orcamento_pk) { // Supondo que a view de create retorna o PK do orçamento
+                                       window.location.href = "{% url 'quotes:orcamento_list' %}".slice(0, -1) + response.orcamento_pk + "/";
+                                   } else {
+                                       location.reload();
+                                   }
+                                } else {
+                                    location.reload();
+                                }
+                            }
+                        }, 300);
+                    }
                 } else {
                     if (response.errors) {
                         var error_html = '<div class="alert alert-danger">Por favor, corrija os erros abaixo:<ul>';
@@ -293,6 +409,7 @@ $(document).ready(function() {
                 }
             },
             error: function(xhr) {
+                hideLoading();
                 var errorMsg = 'Ocorreu um erro ao processar sua solicitação.';
                 if (xhr.responseJSON) {
                     if (xhr.responseJSON.message) {
@@ -308,20 +425,24 @@ $(document).ready(function() {
                     }
                 }
                 alert(errorMsg);
-            },
-            complete: function() {
-                hideLoading();
             }
         });
     });
 
     $('#ajaxModal').on('hidden.bs.modal', function () {
-        $(this).find('.modal-content').html('');
+        if (!originalModalContent && !targetSelectName) { // Só limpa se não estiver voltando de um quick create
+            $(this).find('.modal-content').html('');
+        }
         $(this).find('.modal-body .alert-danger').remove();
+    });
+
+    // Para garantir que o Select2 funcione bem quando um modal é mostrado
+    $('#ajaxModal').on('shown.bs.modal', function () {
+        initializeSelect2InContext(this);
     });
 });
 </script>
-
+<script src="{% static 'adminlte/plugins/jquery-mask-plugin/jquery.mask.js' %}"></script>
 {% block extrajs %}{% endblock %}
 </body>
 </html>

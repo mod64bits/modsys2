@@ -1,0 +1,60 @@
+{% extends "base/base.html" %}
+{% load static %}
+
+{% block title %}Lista de Fornecedores{% endblock %}
+
+{% block page_title %}
+    Lista de Fornecedores
+    <button type="button" class="btn btn-primary btn-sm float-right" 
+            data-toggle="ajax-modal" 
+            data-target="#ajaxModal"
+            data-url="{% url 'inventory:fornecedor_create_modal' %}">
+        <i class="fas fa-plus"></i> Novo Fornecedor
+    </button>
+{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-body table-responsive p-0">
+        {% if fornecedores %}
+        <table class="table table-hover text-nowrap">
+            <thead>
+                <tr>
+                    <th>Nome</th>
+                    <th>Documento</th>
+                    <th>Telefone</th>
+                    <th>Email</th>
+                    <th>Cidade</th>
+                    <th>Ações</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for fornecedor in fornecedores %}
+                <tr>
+                    <td>
+                        <a href="#" data-toggle="ajax-modal" data-target="#ajaxModal" data-url="{% url 'inventory:fornecedor_detail_modal' fornecedor.pk %}">
+                            {{ fornecedor.nome|truncatechars:40 }}
+                        </a>
+                    </td>
+                    <td>{{ fornecedor.documento|default:"-" }}</td>
+                    <td>{{ fornecedor.telefone|default:"-" }}</td>
+                    <td>{{ fornecedor.email|default:"-" }}</td>
+                    <td>{{ fornecedor.endereco_cidade|default:"-" }}</td>
+                    <td>
+                        <button type="button" class="btn btn-xs btn-info" data-toggle="ajax-modal" data-target="#ajaxModal" data-url="{% url 'inventory:fornecedor_detail_modal' fornecedor.pk %}" title="Ver Detalhes"><i class="fas fa-eye"></i></button>
+                        <button type="button" class="btn btn-xs btn-warning" data-toggle="ajax-modal" data-target="#ajaxModal" data-url="{% url 'inventory:fornecedor_update_modal' fornecedor.pk %}" title="Editar"><i class="fas fa-edit"></i></button>
+                        <button type="button" class="btn btn-xs btn-danger" data-toggle="ajax-modal" data-target="#ajaxModal" data-url="{% url 'inventory:fornecedor_delete_modal' fornecedor.pk %}" title="Excluir"><i class="fas fa-trash"></i></button>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <div class="p-3 text-center">
+            <p>Nenhum fornecedor encontrado.</p>
+            <button type="button" class="btn btn-primary" data-toggle="ajax-modal" data-target="#ajaxModal" data-url="{% url 'inventory:fornecedor_create_modal' %}"><i class="fas fa-plus"></i> Cadastrar Primeiro Fornecedor</button>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

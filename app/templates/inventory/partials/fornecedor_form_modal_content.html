@@ -1,0 +1,44 @@
+{% load crispy_forms_tags %}
+<div class="modal-header">
+    <h5 class="modal-title">{{ form_title|default:"Formulário de Fornecedor" }}</h5>
+    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+</div>
+<form method="post" action="{{ form_action_url }}" class="ajax-form" id="fornecedorModalForm">
+    {% csrf_token %}
+    <div class="modal-body">
+        {% if form.non_field_errors %}<div class="alert alert-danger">{{ form.non_field_errors }}</div>{% endif %}
+        
+        {% if crispy_forms_tags %}
+            {{ form|crispy }}
+        {% else %}
+            <div class="row">
+                <div class="col-md-12 form-group">{{ form.nome.label_tag }} {{ form.nome }} {% for error in form.nome.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}</div>
+            </div>
+            <div class="row">
+                <div class="col-md-6 form-group">{{ form.documento.label_tag }} {{ form.documento }} {% for error in form.documento.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}</div>
+                <div class="col-md-6 form-group">{{ form.telefone.label_tag }} {{ form.telefone }} {% for error in form.telefone.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}</div>
+            </div>
+            <div class="row">
+                <div class="col-md-12 form-group">{{ form.email.label_tag }} {{ form.email }} {% for error in form.email.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}</div>
+            </div>
+            <hr><p class="font-weight-bold">Endereço (Opcional)</p>
+            <div class="row">
+                <div class="col-md-8 form-group">{{ form.endereco_logradouro.label_tag }} {{ form.endereco_logradouro }} {% for error in form.endereco_logradouro.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}</div>
+                <div class="col-md-4 form-group">{{ form.endereco_numero.label_tag }} {{ form.endereco_numero }} {% for error in form.endereco_numero.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}</div>
+            </div>
+            <div class="row">
+                 <div class="col-md-6 form-group">{{ form.endereco_complemento.label_tag }} {{ form.endereco_complemento }} {% for error in form.endereco_complemento.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}</div>
+                <div class="col-md-6 form-group">{{ form.endereco_bairro.label_tag }} {{ form.endereco_bairro }} {% for error in form.endereco_bairro.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}</div>
+            </div>
+            <div class="row">
+                <div class="col-md-5 form-group">{{ form.endereco_cidade.label_tag }} {{ form.endereco_cidade }} {% for error in form.endereco_cidade.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}</div>
+                <div class="col-md-3 form-group">{{ form.endereco_estado.label_tag }} {{ form.endereco_estado }} {% for error in form.endereco_estado.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}</div>
+                <div class="col-md-4 form-group">{{ form.endereco_cep.label_tag }} {{ form.endereco_cep }} {% for error in form.endereco_cep.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}</div>
+            </div>
+        {% endif %}
+    </div>
+    <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+        <button type="submit" class="btn btn-primary">Salvar Fornecedor</button>
+    </div>
+</form>

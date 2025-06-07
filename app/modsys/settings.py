@@ -31,7 +31,7 @@ DEBUG = True
 
 # ALLOWED_HOSTS = []
 ALLOWED_HOSTS = [
-    h.strip() for h in os.getenv('ALLOWED_HOSTS', '127.0.0.1').split(',')
+    h.strip() for h in os.getenv('ALLOWED_HOSTS', '*').split(',')
     if h.strip()
 ]
 
@@ -55,7 +55,9 @@ INSTALLED_APPS = [
     #'apps.ordem_servicos',
     'apps.servicedesk',
     'apps.customers',
-    'apps.reports'
+    'apps.reports',
+    'apps.inventory',
+    'apps.quotes',
 ]
 
 MIDDLEWARE = [
@@ -95,10 +97,10 @@ WSGI_APPLICATION = 'modsys.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': os.getenv('DB_ENGINE', 'django.db.backends.postgresql'),
-        'NAME': os.getenv('POSTGRES_DB', 'mod_sys_dev'),
+        'NAME': os.getenv('POSTGRES_DB', 'mod_dev'),
         'USER': os.getenv('POSTGRES_USER', 'postgres'),
-        'PASSWORD': os.getenv('POSTGRES_PASSWORD', 'mod64'),
-        'HOST': os.getenv('POSTGRES_HOST', '172.16.20.7'),
+        'PASSWORD': os.getenv('POSTGRES_PASSWORD', 'modroot01'),
+        'HOST': os.getenv('POSTGRES_HOST', '172.16.20.25'),
         'PORT': os.getenv('POSTGRES_PORT', '5432'),
     }
 }

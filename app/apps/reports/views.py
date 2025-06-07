@@ -136,7 +136,7 @@ def generate_filtered_pdf_view(request):
         'start_date_filter': start_date_filter,
         'end_date_filter': end_date_filter,
         'content_type_filter': content_type_filter,
-        'company_name': 'Nome da Sua Empresa Aqui', # Ajuste conforme necessário
+        'company_name': 'mod64bits', # Ajuste conforme necessário
         'report_date': timezone.now(),
     }
 
