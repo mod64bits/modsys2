@@ -299,20 +299,16 @@ $(document).ready(function() {
 
         initializeSelect2(newFormElement);
 
-        newFormElement.find('.item-calc[type="text"], .item-calc[type="number"]').each(function() {
-            // $(this).mask('#.##0,00', {reverse: true});
-        });
-
         newFormElement.find('.delete-formset-row').show();
         return newFormElement;
     }
 
     $('.add-formset-row').click(function() {
         addForm(this);
-        updateAllTotals();
     });
 
-    $('form#orcamentoFormMain').on('change input', '.item-calc, .product-lookup', function(event) {
+    // Delegar o evento para o container principal
+    $('#orcamentoFormMain').on('change input', '.item-calc, .product-lookup', function(event) {
         var $triggeredElement = $(event.target);
         var $row = $triggeredElement.closest('.formset-row');
 
@@ -322,14 +318,12 @@ $(document).ready(function() {
             var $costPriceField = $row.find('.product-cost-price');
             var $sellPriceField = $row.find('.product-sell-price');
             var $markupField = $row.find('.product-markup');
-            console.log("DEBUG: Product Lookup Changed. Product ID:", productId);
 
             if (productId) {
                 $.ajax({
                     url: "{% url 'quotes:ajax_get_product_details' product_id=0 %}".replace('0', productId),
                     type: 'GET',
                     success: function(data) {
-                        console.log("DEBUG: AJAX success. Data received:", data);
                         if (data.success) {
                             $productHiddenField.val(productId);
                             $costPriceField.val(formatCurrencyForInput(parseFloat(data.preco_compra)));
@@ -339,19 +333,14 @@ $(document).ready(function() {
                                 $sellPriceField.val(formatCurrencyForInput(parseFloat(data.preco_compra)));
                             }
                             $markupField.val('');
-                            console.log("DEBUG: Before calculateRowTotals in AJAX success");
                             calculateRowTotals($row);
-                            updateAllTotals();
-                            console.log("DEBUG: After calculateRowTotals & updateAllTotals in AJAX success");
                         } else {
-                            alert(data.error || "Erro ao buscar detalhes do produto.");
                             $productHiddenField.val('');
                             $costPriceField.val('');
                             $sellPriceField.val('');
                         }
                     },
                     error: function(xhr, status, error) {
-                        console.error("AJAX error:", status, error, xhr.responseText);
                         alert("Erro de comunicação ao buscar detalhes do produto.");
                     }
                 });
@@ -361,12 +350,9 @@ $(document).ready(function() {
                 $sellPriceField.val('');
                 $markupField.val('');
                 calculateRowTotals($row);
-                updateAllTotals();
             }
         } else {
-            console.log("DEBUG: .item-calc changed. Element:", $triggeredElement.attr('name'));
             calculateRowTotals($row);
-            updateAllTotals();
         }
     });
 
@@ -374,7 +360,6 @@ $(document).ready(function() {
         if (typeof value !== 'string') {
             value = String(value);
         }
-        // console.log("DEBUG: parseCurrency input value:", value);
         let s = value.replace(/[^\d,.-]/g, '');
         if (s.includes(',') && s.includes('.')) {
             if (s.lastIndexOf(',') > s.lastIndexOf('.')) {
@@ -388,13 +373,12 @@ $(document).ready(function() {
         }
         const parsed = parseFloat(s);
         var result = isNaN(parsed) ? 0 : parsed;
-        // console.log("DEBUG: parseCurrency output value:", result);
         return result;
     }
 
     function formatCurrencyForDisplay(value) {
         if (isNaN(value) || value === null) value = 0;
-        return value.toFixed(2).replace('.', ',');
+        return 'R$ ' + value.toFixed(2).replace('.', ',');
     }
 
     function formatCurrencyForInput(value) {
@@ -404,42 +388,31 @@ $(document).ready(function() {
 
 
     function calculateRowTotals($row) {
-        // console.log("DEBUG: calculateRowTotals for row:", $row.attr('id'));
         if ($row.hasClass('item-produto-form')) {
             var qty = parseCurrency($row.find('input[name$="-quantidade"]').val());
             var costPrice = parseCurrency($row.find('input[name$="-preco_compra_unitario_historico"]').val());
             var sellPriceDefined = parseCurrency($row.find('input[name$="-preco_venda_unitario_definido"]').val());
             var markup = parseCurrency($row.find('input[name$="-porcentagem_markup"]').val());
 
-            // console.log("DEBUG calculateRowTotals - Parsed values: Qty=" + qty + ", Cost=" + costPrice + ", SellDefined=" + sellPriceDefined + ", Markup=" + markup);
-
             var sellPriceCalculated = sellPriceDefined;
 
             if (markup > 0 && costPrice > 0) {
                 sellPriceCalculated = costPrice * (1 + (markup / 100));
                 $row.find('input[name$="-preco_venda_unitario_definido"]').val(formatCurrencyForInput(sellPriceCalculated));
-                // console.log("DEBUG calculateRowTotals - Markup applied. New Sell Price Calculated: " + sellPriceCalculated);
-            } else if (costPrice > 0 && sellPriceDefined <=0 && $row.find('input[name$="-preco_venda_unitario_definido"]').is(":not([readonly])")) {
-                // Se o preço de venda não foi definido e o markup é zero, e o campo não é readonly (caso seja preenchido por ajax)
-                // podemos definir o preço de venda igual ao de custo como um fallback, ou deixar em branco.
-                // $row.find('input[name$="-preco_venda_unitario_definido"]').val(formatCurrencyForInput(costPrice));
-                // sellPriceCalculated = costPrice; // Atualiza para o cálculo de subtotal
             }
 
             var subtotalCompra = qty * costPrice;
             var subtotalVenda = qty * sellPriceCalculated;
             var lucroItem = subtotalVenda - subtotalCompra;
 
-            // console.log("DEBUG calculateRowTotals - Subtotals: Compra=" + subtotalCompra + ", Venda=" + subtotalVenda + ", Lucro=" + lucroItem);
-
-            $row.find('.subtotal-compra-display').text('R$ ' + formatCurrencyForDisplay(subtotalCompra));
-            $row.find('.subtotal-venda-display').text('R$ ' + formatCurrencyForDisplay(subtotalVenda));
-            $row.find('.lucro-item-display').text('R$ ' + formatCurrencyForDisplay(lucroItem));
+            $row.find('.subtotal-compra-display').text(formatCurrencyForDisplay(subtotalCompra));
+            $row.find('.subtotal-venda-display').text(formatCurrencyForDisplay(subtotalVenda));
+            $row.find('.lucro-item-display').text(formatCurrencyForDisplay(lucroItem));
         }
+        updateAllTotals(); // Chamar a atualização dos totais gerais sempre que uma linha for recalculada
     }
 
     function updateAllTotals() {
-        // console.log("DEBUG: updateAllTotals called");
         var totalProdutosCompra = 0;
         var totalProdutosVenda = 0;
         $('.item-produto-form:not(:has(input[name$="-DELETE"]:checked))').each(function() {
@@ -453,10 +426,10 @@ $(document).ready(function() {
                 totalProdutosVenda += qty * sellPrice;
             }
         });
-        $('#total-produtos-venda-display').text('R$ ' + formatCurrencyForDisplay(totalProdutosVenda));
-        $('#display-total-produtos-compra').text('R$ ' + formatCurrencyForDisplay(totalProdutosCompra));
-        $('#display-total-produtos-venda').text('R$ ' + formatCurrencyForDisplay(totalProdutosVenda));
-        $('#display-lucro-equipamentos').text('R$ ' + formatCurrencyForDisplay(totalProdutosVenda - totalProdutosCompra));
+        $('#total-produtos-venda-display').text(formatCurrencyForDisplay(totalProdutosVenda));
+        $('#display-total-produtos-compra').text(formatCurrencyForDisplay(totalProdutosCompra));
+        $('#display-total-produtos-venda').text(formatCurrencyForDisplay(totalProdutosVenda));
+        $('#display-lucro-equipamentos').text(formatCurrencyForDisplay(totalProdutosVenda - totalProdutosCompra));
 
         var totalMaoDeObra = 0;
         $('.mao-de-obra-form:not(:has(input[name$="-DELETE"]:checked))').each(function() {
@@ -464,8 +437,8 @@ $(document).ready(function() {
                 totalMaoDeObra += parseCurrency($(this).find('input[name$="-valor"]').val());
             }
         });
-        $('#total-mao-de-obra-display').text('R$ ' + formatCurrencyForDisplay(totalMaoDeObra));
-        $('#display-total-mao-de-obra').text('R$ ' + formatCurrencyForDisplay(totalMaoDeObra));
+        $('#total-mao-de-obra-display').text(formatCurrencyForDisplay(totalMaoDeObra));
+        $('#display-total-mao-de-obra').text(formatCurrencyForDisplay(totalMaoDeObra));
 
         var totalInsumos = 0;
         $('.insumo-form:not(:has(input[name$="-DELETE"]:checked))').each(function() {
@@ -473,35 +446,22 @@ $(document).ready(function() {
                 totalInsumos += parseCurrency($(this).find('input[name$="-valor"]').val());
             }
         });
-        $('#total-insumos-display').text('R$ ' + formatCurrencyForDisplay(totalInsumos));
-        $('#display-total-insumos').text('R$ ' + formatCurrencyForDisplay(totalInsumos));
+        $('#total-insumos-display').text(formatCurrencyForDisplay(totalInsumos));
+        $('#display-total-insumos').text(formatCurrencyForDisplay(totalInsumos));
 
         var valorTotalOrcamento = totalProdutosVenda + totalMaoDeObra;
         var lucroBruto = (totalProdutosVenda + totalMaoDeObra) - totalProdutosCompra;
         var lucroLiquido = lucroBruto - totalInsumos;
 
-        $('#display-valor-total-orcamento').text('R$ ' + formatCurrencyForDisplay(valorTotalOrcamento));
-        $('#display-lucro-bruto').text('R$ ' + formatCurrencyForDisplay(lucroBruto));
-        $('#display-lucro-liquido').text('R$ ' + formatCurrencyForDisplay(lucroLiquido));
+        $('#display-valor-total-orcamento').text(formatCurrencyForDisplay(valorTotalOrcamento));
+        $('#display-lucro-bruto').text(formatCurrencyForDisplay(lucroBruto));
+        $('#display-lucro-liquido').text(formatCurrencyForDisplay(lucroLiquido));
     }
 
-    // Calcular totais para linhas existentes ao carregar a página (edição)
-    // Disparar 'input' nos campos relevantes para forçar o cálculo inicial
-    $('.item-produto-form input.item-calc').trigger('input');
-    $('.mao-de-obra-form input.item-calc').trigger('input');
-    $('.insumo-form input.item-calc').trigger('input');
-    // Se houver campos de lookup que precisam ser processados no load, adicione aqui
-    // Ex: $('.item-produto-form .product-lookup').trigger('change'); // Se necessário
-
-    // A chamada updateAllTotals() será feita após os calculateRowTotals individuais
-    // que são acionados pelo trigger('input') acima.
-    // Para garantir que os totais sejam atualizados após todos os cálculos de linha,
-    // podemos chamar updateAllTotals() uma vez após os triggers.
-    // No entanto, é melhor que cada calculateRowTotals chame updateAllTotals se for o último passo da cadeia de eventos.
-    // A estrutura atual já faz isso.
-    // Apenas para garantir a inicialização correta dos totais gerais:
-    updateAllTotals();
-
+    // Inicialização dos cálculos ao carregar a página
+    $('.formset-row').each(function() {
+        calculateRowTotals($(this));
+    });
 
     $('.formset-container').on('click', 'input[name$="-DELETE"]', function() {
         var $row = $(this).closest('.formset-row');
