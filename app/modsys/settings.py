@@ -58,6 +58,7 @@ INSTALLED_APPS = [
     'apps.reports',
     'apps.inventory',
     'apps.quotes',
+    'apps.dashboard',
 ]
 
 MIDDLEWARE = [
@@ -99,8 +100,8 @@ DATABASES = {
         'ENGINE': os.getenv('DB_ENGINE', 'django.db.backends.postgresql'),
         'NAME': os.getenv('POSTGRES_DB', 'mod_dev'),
         'USER': os.getenv('POSTGRES_USER', 'postgres'),
-        'PASSWORD': os.getenv('POSTGRES_PASSWORD', 'modroot01'),
-        'HOST': os.getenv('POSTGRES_HOST', '172.16.20.25'),
+        'PASSWORD': os.getenv('POSTGRES_PASSWORD', 'mod64'),
+        'HOST': os.getenv('POSTGRES_HOST', '172.19.91.26'),
         'PORT': os.getenv('POSTGRES_PORT', '5432'),
     }
 }
@@ -162,5 +163,5 @@ AUTHENTICATION_BACKENDS = (
 )
 
 LOGIN_URL = 'login' # O nome da URL que usaremos para a página de login
-LOGIN_REDIRECT_URL = 'servicedesk:ticket_list' # Para onde ir após o login bem-sucedido
+LOGIN_REDIRECT_URL = 'dashboard:dashboard_page' # Para onde ir após o login bem-sucedido
 LOGOUT_REDIRECT_URL = 'login' # Para onde ir após o logout
