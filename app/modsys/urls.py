@@ -1,40 +1,33 @@
-"""
-URL configuration for modsys project.
+# ticket_project/urls.py
 
-The `urlpatterns` list routes URLs to views. For more information please see:
-    https://docs.djangoproject.com/en/5.2/topics/http/urls/
-Examples:
-Function views
-    1. Add an import:  from my_app import views
-    2. Add a URL to urlpatterns:  path('', views.home, name='home')
-Class-based views
-    1. Add an import:  from other_app.views import Home
-    2. Add a URL to urlpatterns:  path('', Home.as_view(), name='home')
-Including another URLconf
-    1. Import the include() function: from django.urls import include, path
-    2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
-"""
-from django.conf import settings
-from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import path, include
-from django.views.generic import RedirectView
+from django.conf import settings
+from django.conf.urls.static import static
 from django.contrib.auth import views as auth_views
+from django.views.generic import RedirectView
 
+# Assumindo que a sua estrutura de projeto é 'apps.nome_do_app'
+# Se não for, remova o prefixo 'apps.' (ex: 'dashboard.urls')
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-     path('servicedesk/', include('apps.servicedesk.urls', namespace='servicedesk')),
+
+    # 1. Dashboard agora está explicitamente em /dashboard/
+    path('dashboard/', include('apps.dashboard.urls', namespace='dashboard')),
+
+    path('servicedesk/', include('apps.servicedesk.urls', namespace='servicedesk')),
     path('customers/', include('apps.customers.urls', namespace='customers')),
     path('reports/', include('apps.reports.urls', namespace='reports')),
     path('inventory/', include('apps.inventory.urls', namespace='inventory')),
     path('quotes/', include('apps.quotes.urls', namespace='quotes')),
+
     # URLs de Autenticação
     path('login/', auth_views.LoginView.as_view(template_name='registration/login.html'), name='login'),
     path('logout/', auth_views.LogoutView.as_view(), name='logout'),
-    # Redireciona a URL raiz '/' para a lista de tickets
-    path('', RedirectView.as_view(url='/servicedesk/tickets/', permanent=True)),
-
+    
+    # 2. A URL raiz ('/') agora redireciona para o dashboard
+    path('', RedirectView.as_view(url='/dashboard/', permanent=True), name='home'),
 ]
 
 if settings.DEBUG:
@@ -42,3 +35,4 @@ if settings.DEBUG:
         settings.MEDIA_URL,
         document_root=settings.MEDIA_ROOT
     )
+

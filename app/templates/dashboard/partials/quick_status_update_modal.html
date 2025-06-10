@@ -1,0 +1,27 @@
+{% load crispy_forms_tags %}
+<div class="modal-header">
+    <h5 class="modal-title">{{ form_title }}</h5>
+    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+        <span aria-hidden="true">&times;</span>
+    </button>
+</div>
+<form method="post" action="{{ form_action_url }}" class="ajax-form">
+    {% csrf_token %}
+    <div class="modal-body">
+        {% if form.non_field_errors %}<div class="alert alert-danger">{{ form.non_field_errors }}</div>{% endif %}
+        
+        {% if crispy_forms_tags %}
+            {{ form|crispy }}
+        {% else %}
+            <div class="form-group">
+                {{ form.status.label_tag }}
+                {{ form.status }}
+                {% for error in form.status.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+            </div>
+        {% endif %}
+    </div>
+    <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+        <button type="submit" class="btn btn-primary">Salvar Status</button>
+    </div>
+</form>

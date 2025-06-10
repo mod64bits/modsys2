@@ -1,0 +1,289 @@
+{% extends "base/base.html" %}
+{% load static %}
+{% load i18n %}
+
+{% block title %}Dashboard{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+
+{% block content %}
+<!-- Filtros -->
+<div class="row mb-3">
+    <!-- Filtro de Atividades -->
+    <div class="col-md-6">
+        <div class="card card-outline card-info">
+            <div class="card-header"><h3 class="card-title">Filtro de Atividades (Tickets e OS)</h3></div>
+            <div class="card-body">
+                <form id="activitiesDateFilterForm" class="form-inline">
+                    <div class="form-group mb-2">
+                        <label for="activityStartDate" class="sr-only">Data Inicial</label>
+                        <input type="date" class="form-control" id="activityStartDate" name="start_date" value="{{ activity_start_date }}">
+                    </div>
+                    <div class="form-group mx-sm-3 mb-2">
+                        <label for="activityEndDate" class="sr-only">Data Final</label>
+                        <input type="date" class="form-control" id="activityEndDate" name="end_date" value="{{ activity_end_date }}">
+                    </div>
+                    <button type="submit" class="btn btn-primary mb-2"><i class="fas fa-sync-alt"></i> Atualizar Atividades</button>
+                </form>
+            </div>
+        </div>
+    </div>
+    <!-- Filtro de Faturamento -->
+    <div class="col-md-6">
+        <div class="card card-outline card-success">
+            <div class="card-header"><h3 class="card-title">Filtro de Faturamento (Orçamentos)</h3></div>
+            <div class="card-body">
+                <form id="billingFilterForm" class="form-inline">
+                    <div class="form-group mb-2">
+                        <label for="billingYear1" class="mr-2">Ano</label>
+                        <select class="form-control" id="billingYear1" name="year1">
+                            {% for year in available_years %}
+                                <option value="{{ year }}" {% if year == current_year %}selected{% endif %}>{{ year }}</option>
+                            {% empty %}
+                                <option value="{{ current_year }}">{{ current_year }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-group mx-sm-3 mb-2">
+                        <label for="billingYear2" class="mr-2">Comparar com</label>
+                         <select class="form-control" id="billingYear2" name="year2">
+                            <option value="">-- Nenhum --</option>
+                            {% for year in available_years %}
+                                <option value="{{ year }}" {% if year == previous_year %}selected{% endif %}>{{ year }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn-success mb-2"><i class="fas fa-sync-alt"></i> Atualizar Faturamento</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Faturamento ao Longo do Tempo -->
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header border-0">
+                <div class="d-flex justify-content-between">
+                    <h3 class="card-title">Faturamento ao Longo do Tempo</h3>
+                    <a href="{% url 'reports:report_filter_page' %}">Ver Relatório Detalhado</a>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="d-flex">
+                    <p class="d-flex flex-column">
+                        <span class="text-bold text-lg" id="faturamentoTotalPeriodo">R$ 0,00</span>
+                        <span id="faturamentoTotalPeriodoLabel">Faturamento Total em 2025</span>
+                    </p>
+                </div>
+                <div class="position-relative mb-4">
+                    <canvas id="salesChart" height="200"></canvas>
+                </div>
+                <div class="d-flex flex-row justify-content-end">
+                    <span id="legendYear1" class="mr-2"><i class="fas fa-square text-primary"></i> Ano</span>
+                    <span id="legendYear2"><i class="fas fa-square text-gray"></i> Ano Anterior</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Gráficos de Atividades -->
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header"><h3 class="card-title">Tickets por Status</h3></div>
+            <div class="card-body"><canvas id="ticketsChart" height="150"></canvas></div>
+        </div>
+        <div class="card mt-4">
+            <div class="card-header"><h3 class="card-title">Ordens de Serviço por Status</h3></div>
+            <div class="card-body"><canvas id="workOrdersChart" height="150"></canvas></div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Listas de Ações Rápidas -->
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header"><h3 class="card-title">Tickets Abertos Recentes</h3></div>
+            <div class="card-body table-responsive p-0">
+                <table class="table table-sm">
+                    <!-- Conteúdo da tabela de Tickets (sem alterações) -->
+                </table>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header"><h3 class="card-title">Ordens de Serviço Abertas Recentes</h3></div>
+            <div class="card-body table-responsive p-0">
+                <table class="table table-sm">
+                    <!-- Conteúdo da tabela de OS (sem alterações) -->
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Nova linha para a lista de Orçamentos Pendentes -->
+<div class="row">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header"><h3 class="card-title">Orçamentos Pendentes Recentes</h3></div>
+            <div class="card-body table-responsive p-0">
+                <table class="table table-sm">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Cliente</th>
+                            <th>Status Atual</th>
+                            <th>Valor Total</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for orcamento in recent_pending_quotes %}
+                        <tr>
+                            <td>#{{ orcamento.id }}</td>
+                            <td><a href="{% url 'quotes:orcamento_detail' orcamento.pk %}">{{ orcamento.cliente.nome|truncatechars:40 }}</a></td>
+                            <td>{{ orcamento.get_status_display }}</td>
+                            <td>R$ {{ orcamento.valor_total_orcamento|floatformat:2 }}</td>
+                            <td>
+                                <a href="{% url 'quotes:orcamento_detail' orcamento.pk %}" class="btn btn-xs btn-outline-info" title="Ver Detalhes"><i class="fas fa-eye"></i></a>
+                                <button class="btn btn-xs btn-outline-warning" data-toggle="ajax-modal" data-target="#ajaxModal" data-url="{% url 'dashboard:update_status' model_name='orcamento' pk=orcamento.pk %}" title="Alterar Status"><i class="fas fa-exchange-alt"></i></button>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="5" class="text-center p-3">Nenhum orçamento pendente.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extrajs %}
+<!-- ChartJS -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+$(document).ready(function() {
+    const chartColors = [ '#007bff', '#28a745', '#ffc107', '#dc3545', '#17a2b8', '#6c757d', '#f012be', '#6610f2' ];
+
+    function updateDashboardData(dataType, params) {
+        const url = `{% url 'dashboard:data_api' %}?data_type=${dataType}&${params}`;
+
+        $.ajax({
+            url: url,
+            type: 'GET',
+            success: function(data) {
+                if(data.tickets_por_status) {
+                    updateDoughnutChart( 'ticketsChart', data.tickets_por_status, 'Tickets por Status', (item) => item.status, (item) => item.count);
+                }
+                if(data.os_por_status) {
+                    updateDoughnutChart('workOrdersChart', data.os_por_status, 'Ordens de Serviço por Status', (item) => item.status, (item) => item.count);
+                }
+                if(data.faturamento_ao_longo_do_tempo) {
+                    const billingData = data.faturamento_ao_longo_do_tempo;
+                    $('#faturamentoTotalPeriodo').text('R$ ' + billingData.total_geral.toFixed(2).replace('.', ','));
+                    $('#faturamentoTotalPeriodoLabel').text('Faturamento Total em ' + billingData.ano1.label);
+
+                    $('#legendYear1').html(`<i class="fas fa-square text-primary"></i> ${billingData.ano1.label}`);
+                    if (billingData.ano2.label !== '0') {
+                        $('#legendYear2').html(`<i class="fas fa-square text-gray"></i> ${billingData.ano2.label}`).show();
+                    } else {
+                        $('#legendYear2').hide();
+                    }
+
+                    updateSalesChart(
+                        'salesChart',
+                        billingData.labels,
+                        billingData.ano1,
+                        billingData.ano2
+                    );
+                }
+            },
+            error: function() {
+                alert("Erro ao carregar dados do dashboard.");
+            }
+        });
+    }
+
+    function updateDoughnutChart(chartId, data, title, labelCallback, dataCallback) {
+        const ctx = document.getElementById(chartId)?.getContext('2d');
+        if (!ctx) return;
+        const chartInstance = Chart.getChart(chartId);
+        if (chartInstance) { chartInstance.destroy(); }
+        new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: data.map(labelCallback),
+                datasets: [{ label: title, data: data.map(dataCallback), backgroundColor: chartColors, hoverOffset: 4 }]
+            },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'top' } } }
+        });
+    }
+
+    function updateSalesChart(chartId, labels, year1Data, year2Data) {
+        const ctx = document.getElementById(chartId)?.getContext('2d');
+        if (!ctx) return;
+        const chartInstance = Chart.getChart(chartId);
+        if (chartInstance) { chartInstance.destroy(); }
+
+        const datasets = [{
+            label: year1Data.label,
+            backgroundColor: '#007bff',
+            borderColor: '#007bff',
+            data: year1Data.data
+        }];
+
+        if (year2Data.label !== '0') {
+            datasets.push({
+                label: year2Data.label,
+                backgroundColor: '#ced4da',
+                borderColor: '#ced4da',
+                data: year2Data.data
+            });
+        }
+
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: datasets
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value, index, values) {
+                                return 'R$ ' + value.toLocaleString('pt-BR');
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    $('#activitiesDateFilterForm').on('submit', function(event) {
+        event.preventDefault();
+        const params = $(this).serialize();
+        updateDashboardData('activities', params);
+    });
+
+    $('#billingFilterForm').on('submit', function(event) {
+        event.preventDefault();
+        const params = $(this).serialize();
+        updateDashboardData('billing', params);
+    });
+
+    // Carregar dados iniciais
+    updateDashboardData('activities', $('#activitiesDateFilterForm').serialize());
+    updateDashboardData('billing', $('#billingFilterForm').serialize());
+});
+</script>
+{% endblock %}

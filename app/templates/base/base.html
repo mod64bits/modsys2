@@ -44,7 +44,7 @@
         <a class="nav-link" data-widget="pushmenu" href="#" role="button"><i class="fas fa-bars"></i></a>
       </li>
       <li class="nav-item d-none d-sm-inline-block">
-        <a href="{% if user.is_authenticated %}{% url 'servicedesk:ticket_list' %}{% else %}{% url 'login' %}{% endif %}" class="nav-link">Home</a>
+        <a href="{% if user.is_authenticated %}{% url 'dashboard:dashboard_page' %}{% else %}{% url 'login' %}{% endif %}" class="nav-link">Home</a>
       </li>
       </ul>
 
@@ -78,7 +78,7 @@
     </ul>
   </nav>
   <aside class="main-sidebar sidebar-dark-primary elevation-4">
-    <a href="{% if user.is_authenticated %}{% url 'servicedesk:ticket_list' %}{% else %}{% url 'login' %}{% endif %}" class="brand-link">
+    <a href="{% if user.is_authenticated %}{% url 'dashboard:dashboard_page' %}{% else %}{% url 'login' %}{% endif %}" class="brand-link">
       <img src="{% static 'adminlte/dist/img/AdminLTELogo.png' %}" alt="AdminLTE Logo" class="brand-image img-circle elevation-3" style="opacity: .8">
       <span class="brand-text font-weight-light">Service Desk</span>
     </a>
@@ -98,6 +98,12 @@
       <nav class="mt-2">
         <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu" data-accordion="false">
           {% if user.is_authenticated %}
+          <li class="nav-item">
+            <a href="{% url 'dashboard:dashboard_page' %}" class="nav-link {% if request.resolver_match.app_name == 'dashboard' %}active{% endif %}">
+              <i class="nav-icon fas fa-tachometer-alt"></i>
+              <p>Dashboard</p>
+            </a>
+          </li>
           <li class="nav-item">
             <a href="{% url 'customers:customer_list' %}" class="nav-link {% if request.resolver_match.app_name == 'customers' %}active{% endif %}">
               <i class="nav-icon fas fa-users"></i>
@@ -178,7 +184,7 @@
             <h1 class="m-0">{% block page_title %}{{ page_title|default:"Bem-vindo" }}{% endblock %}</h1>
           </div><div class="col-sm-6">
             <ol class="breadcrumb float-sm-right">
-              <li class="breadcrumb-item"><a href="{% if user.is_authenticated %}{% url 'servicedesk:ticket_list' %}{% else %}{% url 'login' %}{% endif %}">Home</a></li>
+              <li class="breadcrumb-item"><a href="{% if user.is_authenticated %}{% url 'dashboard:dashboard_page' %}{% else %}{% url 'login' %}{% endif %}">Home</a></li>
               {% block breadcrumb %}{% endblock %}
               <li class="breadcrumb-item active">{{ page_title|default:"Página Atual" }}</li>
             </ol>
@@ -208,7 +214,8 @@
   </footer>
 </div>
 <div class="modal fade" id="ajaxModal" tabindex="-1" role="dialog" aria-labelledby="ajaxModalLabel" aria-hidden="true">
-  <div class="modal-dialog modal-xl" role="document"> <div class="modal-content">
+  <div class="modal-dialog modal-xl" role="document">
+     <div class="modal-content">
       </div>
   </div>
 </div>
@@ -231,7 +238,7 @@ $(document).ready(function() {
     var originalModalContent = null;
     var originalModalUrl = null;
     var targetSelectName = null;
-    var lastOpenedModalUrl = null; // Para saber qual modal principal reabrir
+    var lastOpenedModalUrl = null;
 
     function showLoading() {
         $('#loadingOverlay').fadeIn(100);
@@ -241,14 +248,13 @@ $(document).ready(function() {
         $('#loadingOverlay').fadeOut(100);
     }
 
-    // Função para inicializar Select2 em um contexto específico
     function initializeSelect2InContext(context) {
         $(context).find('.select2-field').select2({
             theme: 'bootstrap4',
             width: '100%',
             placeholder: "Selecione...",
             allowClear: true,
-            dropdownParent: $('#ajaxModal') // Garante que o dropdown apareça sobre o modal
+            dropdownParent: $('#ajaxModal')
         });
     }
 
@@ -259,20 +265,19 @@ $(document).ready(function() {
         var modalTarget = $(clickedElement.data('target') || '#ajaxModal');
 
         if (clickedElement.hasClass('quick-create-related')) {
-            // Se o modal atual já tem um formulário, salva seu estado
             if (modalTarget.find('form.ajax-form').length > 0) {
                 originalModalContent = modalTarget.find('.modal-content').html();
                 originalModalUrl = modalTarget.find('form.ajax-form').attr('action');
-            } else { // Se não tem form, talvez seja um modal de detalhe, pega a URL do botão que o abriu
-                originalModalUrl = lastOpenedModalUrl; // Tenta usar a URL do último modal principal aberto
-                originalModalContent = null; // Não podemos salvar o conteúdo de forma simples
+            } else {
+                originalModalUrl = lastOpenedModalUrl;
+                originalModalContent = null;
             }
             targetSelectName = clickedElement.data('update-select');
         } else {
             originalModalContent = null;
             originalModalUrl = null;
             targetSelectName = null;
-            lastOpenedModalUrl = url; // Salva a URL do modal principal que está sendo aberto
+            lastOpenedModalUrl = url;
         }
 
         if (clickedElement && clickedElement.length && typeof clickedElement.prop === 'function') {
@@ -285,7 +290,7 @@ $(document).ready(function() {
                 type: 'GET',
                 success: function(response) {
                     modalTarget.find('.modal-content').html(response);
-                    initializeSelect2InContext(modalTarget.find('.modal-content')); // Inicializa select2 no novo conteúdo
+                    initializeSelect2InContext(modalTarget.find('.modal-content'));
                     modalTarget.modal('show');
                 },
                 error: function(xhr, status, error) {
@@ -312,7 +317,7 @@ $(document).ready(function() {
         showLoading();
 
         $.ajax({
-            url: currentFormUrl, // Usa a URL do formulário atual
+            url: currentFormUrl,
             type: method,
             data: formData,
             processData: false,
@@ -331,8 +336,6 @@ $(document).ready(function() {
 
                         modalTarget.modal('hide');
 
-                        // Recarregar o modal original (pai) para obter o estado mais recente do formulário
-                        // e então atualizar o select.
                         var urlToReloadOriginal = originalModalUrl || lastOpenedModalUrl;
 
                         if (urlToReloadOriginal) {
@@ -349,7 +352,7 @@ $(document).ready(function() {
                                         if (!$selectToUpdate.find('option[value="' + newId + '"]').length) {
                                             $selectToUpdate.append($('<option>', { value: newId, text: newName }));
                                         }
-                                        $selectToUpdate.val(newId).trigger('change'); // Trigger change para Select2
+                                        $selectToUpdate.val(newId).trigger('change');
                                     }
                                     $('#ajaxModal').modal('show');
                                 },
@@ -375,9 +378,8 @@ $(document).ready(function() {
                             if (typeof filterForm !== 'undefined' && $('#filterForm').length) {
                                 $('#filterForm').submit();
                             } else {
-                                // Se a URL atual for a de criação de orçamento, redireciona para o detalhe
                                 if (currentFormUrl.includes('quotes/new')) {
-                                   if(response.orcamento_pk) { // Supondo que a view de create retorna o PK do orçamento
+                                   if(response.orcamento_pk) {
                                        window.location.href = "{% url 'quotes:orcamento_list' %}".slice(0, -1) + response.orcamento_pk + "/";
                                    } else {
                                        location.reload();
@@ -430,19 +432,18 @@ $(document).ready(function() {
     });
 
     $('#ajaxModal').on('hidden.bs.modal', function () {
-        if (!originalModalContent && !targetSelectName) { // Só limpa se não estiver voltando de um quick create
+        if (!originalModalContent && !targetSelectName) {
             $(this).find('.modal-content').html('');
         }
         $(this).find('.modal-body .alert-danger').remove();
     });
 
-    // Para garantir que o Select2 funcione bem quando um modal é mostrado
     $('#ajaxModal').on('shown.bs.modal', function () {
         initializeSelect2InContext(this);
     });
 });
 </script>
-<script src="{% static 'adminlte/plugins/jquery-mask-plugin/jquery.mask.js' %}"></script>
+
 {% block extrajs %}{% endblock %}
 </body>
 </html>
