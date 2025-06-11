@@ -33,6 +33,16 @@
     .select2-container--open {
         z-index: 10055 !important;
     }
+    /* CORREÇÃO: Regra CSS mais específica para garantir a visibilidade do texto dos anexos */
+    .timeline .timeline-item .timeline-footer a.btn-outline-secondary {
+        color: #007bff; /* Usar cor de link primária para garantir visibilidade */
+        border-color: #007bff;
+    }
+    .timeline .timeline-item .timeline-footer a.btn-outline-secondary:hover {
+        color: #fff;
+        background-color: #007bff;
+        border-color: #007bff;
+    }
   </style>
 </head>
 <body class="hold-transition sidebar-mini">
@@ -258,6 +268,13 @@ $(document).ready(function() {
         });
     }
 
+    function reinitializeModalPlugins(modalContent) {
+        $(modalContent).find('[data-toggle="tab"]').on('click', function (e) {
+            e.preventDefault();
+            $(this).tab('show');
+        });
+    }
+
     $(document).on('click', '[data-toggle="ajax-modal"]', function(event) {
         event.preventDefault();
         var clickedElement = $(this);
@@ -290,6 +307,7 @@ $(document).ready(function() {
                 type: 'GET',
                 success: function(response) {
                     modalTarget.find('.modal-content').html(response);
+                    reinitializeModalPlugins(modalTarget.find('.modal-content'));
                     initializeSelect2InContext(modalTarget.find('.modal-content'));
                     modalTarget.modal('show');
                 },
@@ -330,6 +348,7 @@ $(document).ready(function() {
                     if (response.success) {
                         if (response.html) {
                             modalTarget.find('.modal-content').html(response.html);
+                            reinitializeModalPlugins(modalTarget.find('.modal-content'));
                             initializeSelect2InContext(modalTarget.find('.modal-content'));
                             if (response.message) {
                                  $('.content .container-fluid').prepend(
@@ -375,6 +394,7 @@ $(document).ready(function() {
                     }
                 } else if (typeof response === 'string') {
                     modalTarget.find('.modal-content').html(response);
+                    reinitializeModalPlugins(modalTarget.find('.modal-content'));
                     initializeSelect2InContext(modalTarget.find('.modal-content'));
                 } else {
                     alert("Resposta inesperada do servidor.");
@@ -409,7 +429,7 @@ $(document).ready(function() {
     });
 
     $('#ajaxModal').on('shown.bs.modal', function () {
-        initializeSelect2InContext(this);
+        // A reinicialização agora é feita no momento em que o conteúdo é carregado/atualizado
     });
 });
 </script>
