@@ -4,7 +4,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>{% block title %}Service Desk App{% endblock %} | mod64bits</title>
+  <title>{% block title %}Service Desk App{% endblock %} | AdminLTE 3</title>
 
   <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700&display=fallback">
   <link rel="stylesheet" href="{% static 'adminlte/plugins/fontawesome-free/css/all.min.css' %}">
@@ -80,7 +80,7 @@
   <aside class="main-sidebar sidebar-dark-primary elevation-4">
     <a href="{% if user.is_authenticated %}{% url 'dashboard:dashboard_page' %}{% else %}{% url 'login' %}{% endif %}" class="brand-link">
       <img src="{% static 'adminlte/dist/img/AdminLTELogo.png' %}" alt="AdminLTE Logo" class="brand-image img-circle elevation-3" style="opacity: .8">
-      <span class="brand-text font-weight-light">MOD Service</span>
+      <span class="brand-text font-weight-light">Service Desk</span>
     </a>
 
     <div class="sidebar">
@@ -208,9 +208,9 @@
     </div>
   <footer class="main-footer">
     <div class="float-right d-none d-sm-inline">
-     mod64bits@gmail.com
+      Anything you want
     </div>
-    <strong>Copyright &copy; {% now "Y" %} <a href="#">mod64bits</a>.</strong> All rights reserved.
+    <strong>Copyright &copy; {% now "Y" %} <a href="#">Sua Empresa</a>.</strong> All rights reserved.
   </footer>
 </div>
 <div class="modal fade" id="ajaxModal" tabindex="-1" role="dialog" aria-labelledby="ajaxModalLabel" aria-hidden="true">
@@ -325,98 +325,66 @@ $(document).ready(function() {
             headers: {'X-Requested-With': 'XMLHttpRequest'},
             success: function(response) {
                 hideLoading();
-                if (response.success) {
-                    var isQuickCreate = (targetSelectName && (response.fornecedor_id || response.categoria_id || response.customer_id));
 
-                    if (isQuickCreate) {
-                        var newId, newName;
-                        if (response.fornecedor_id) { newId = response.fornecedor_id; newName = response.fornecedor_name; }
-                        else if (response.categoria_id) { newId = response.categoria_id; newName = response.categoria_name; }
-                        else if (response.customer_id) { newId = response.customer_id; newName = response.customer_name; }
-
-                        modalTarget.modal('hide');
-
-                        var urlToReloadOriginal = originalModalUrl || lastOpenedModalUrl;
-
-                        if (urlToReloadOriginal) {
-                            showLoading();
-                            $.ajax({
-                                url: urlToReloadOriginal,
-                                type: 'GET',
-                                success: function(originalResponse) {
-                                    $('#ajaxModal').find('.modal-content').html(originalResponse);
-                                    initializeSelect2InContext($('#ajaxModal').find('.modal-content'));
-
-                                    var $selectToUpdate = $('#ajaxModal').find('select[name="' + targetSelectName + '"]');
-                                    if ($selectToUpdate.length) {
-                                        if (!$selectToUpdate.find('option[value="' + newId + '"]').length) {
-                                            $selectToUpdate.append($('<option>', { value: newId, text: newName }));
-                                        }
-                                        $selectToUpdate.val(newId).trigger('change');
-                                    }
-                                    $('#ajaxModal').modal('show');
-                                },
-                                error: function() { alert("Erro ao recarregar o formulário original."); },
-                                complete: function() { hideLoading(); }
-                            });
-                        }
-
-                        originalModalContent = null;
-                        originalModalUrl = null;
-                        targetSelectName = null;
-
-                    } else {
-                        modalTarget.modal('hide');
-                        if (response.message) {
-                            $('.content .container-fluid').prepend(
-                                '<div class="alert alert-success alert-dismissible fade show" role="alert">' +
-                                response.message +
-                                '<button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button></div>'
-                            );
-                        }
-                        setTimeout(function() {
-                            if (typeof filterForm !== 'undefined' && $('#filterForm').length) {
-                                $('#filterForm').submit();
-                            } else {
-                                if (currentFormUrl.includes('quotes/new')) {
-                                   if(response.orcamento_pk) {
-                                       window.location.href = "{% url 'quotes:orcamento_list' %}".slice(0, -1) + response.orcamento_pk + "/";
-                                   } else {
-                                       location.reload();
-                                   }
-                                } else {
-                                    location.reload();
-                                }
+                if (typeof response === 'object' && response !== null && 'success' in response) {
+                    if (response.success) {
+                        if (response.html) {
+                            modalTarget.find('.modal-content').html(response.html);
+                            initializeSelect2InContext(modalTarget.find('.modal-content'));
+                            if (response.message) {
+                                 $('.content .container-fluid').prepend(
+                                    '<div class="alert alert-success alert-dismissible fade show" role="alert" style="position: fixed; top: 20px; right: 20px; z-index: 10056;">' +
+                                    response.message +
+                                    '<button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button></div>'
+                                );
+                                setTimeout(function(){ $('.alert-success').fadeOut('slow'); }, 3000);
                             }
-                        }, 300);
-                    }
-                } else {
-                    if (response.errors) {
-                        var error_html = '<div class="alert alert-danger">Por favor, corrija os erros abaixo:<ul>';
-                        var errorsObject = typeof response.errors === 'string' ? JSON.parse(response.errors) : response.errors;
-                        for (var field in errorsObject) {
-                            errorsObject[field].forEach(function(error) {
-                                error_html += '<li>';
-                                if(field !== '__all__') {
-                                   error_html += field + ': ';
-                                }
-                                error_html += error.message + '</li>';
-                            });
+                        } else {
+                            modalTarget.modal('hide');
+                            if (response.message) {
+                                 $('.content .container-fluid').prepend(
+                                    '<div class="alert alert-success alert-dismissible fade show" role="alert">' +
+                                    response.message +
+                                    '<button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button></div>'
+                                );
+                            }
+                            if (!currentFormUrl.includes('/update-status/')) {
+                                setTimeout(function() {
+                                    location.reload();
+                                }, 500);
+                            }
                         }
-                        error_html += '</ul></div>';
-                        modalTarget.find('.modal-body').prepend(error_html);
                     } else {
-                        alert(response.message || 'Ocorreu um erro ao processar o formulário.');
+                        if (response.errors) {
+                            var error_html = '<div class="alert alert-danger">Por favor, corrija os erros abaixo:<ul>';
+                            var errorsObject = typeof response.errors === 'string' ? JSON.parse(response.errors) : response.errors;
+                            for (var field in errorsObject) {
+                                errorsObject[field].forEach(function(error) {
+                                    error_html += '<li>';
+                                    if(field !== '__all__') {
+                                       error_html += field + ': ';
+                                    }
+                                    error_html += error.message + '</li>';
+                                });
+                            }
+                            error_html += '</ul></div>';
+                            modalTarget.find('.modal-body').prepend(error_html);
+                        } else {
+                            alert(response.message || 'Ocorreu um erro ao processar o formulário.');
+                        }
                     }
+                } else if (typeof response === 'string') {
+                    modalTarget.find('.modal-content').html(response);
+                    initializeSelect2InContext(modalTarget.find('.modal-content'));
+                } else {
+                    alert("Resposta inesperada do servidor.");
                 }
             },
             error: function(xhr) {
                 hideLoading();
-                var errorMsg = 'Ocorreu um erro ao processar sua solicitação.';
+                var errorMsg = 'Ocorreu um erro ao processar a sua solicitação.';
                 if (xhr.responseJSON) {
-                    if (xhr.responseJSON.message) {
-                        errorMsg = xhr.responseJSON.message;
-                    } else if (xhr.responseJSON.errors) {
+                    if (xhr.responseJSON.errors) {
                         var errorsObject = typeof xhr.responseJSON.errors === 'string' ? JSON.parse(xhr.responseJSON.errors) : xhr.responseJSON.errors;
                         errorMsg = "Erros de validação:\n";
                          for (var field in errorsObject) {
@@ -424,6 +392,8 @@ $(document).ready(function() {
                                errorMsg += field + ': ' + error.message + "\n";
                             });
                         }
+                    } else if (xhr.responseJSON.message) {
+                        errorMsg = xhr.responseJSON.message;
                     }
                 }
                 alert(errorMsg);

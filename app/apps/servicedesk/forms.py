@@ -1,28 +1,53 @@
 # servicedesk/forms.py
 from django import forms
-from .models import Ticket, WorkOrder
-from apps.customers.models import Customer # Importar o modelo Customer
+from .models import Ticket, WorkOrder, TicketComment, Category
+from apps.customers.models import Customer
+
+# Novas classes para suportar o upload de múltiplos ficheiros
+class MultipleFileInput(forms.ClearableFileInput):
+    allow_multiple_selected = True
+
+class MultipleFileField(forms.FileField):
+    def __init__(self, *args, **kwargs):
+        # Define o widget padrão e garante que o atributo HTML 'multiple' esteja presente
+        kwargs.setdefault("widget", MultipleFileInput(attrs={'multiple': True}))
+        super().__init__(*args, **kwargs)
+
+    def clean(self, data, initial=None):
+        single_file_clean = super().clean
+        if isinstance(data, (list, tuple)):
+            # Se forem recebidos múltiplos ficheiros, limpa cada um individualmente
+            result = [single_file_clean(d, initial) for d in data]
+        else:
+            # Se for apenas um ficheiro, usa a lógica de limpeza padrão
+            result = single_file_clean(data, initial)
+        return result
 
 class TicketForm(forms.ModelForm):
-    # Adicionar o campo customer ao formulário
     customer = forms.ModelChoiceField(
         queryset=Customer.objects.all(),
-        required=False, # Defina como True se um cliente for sempre obrigatório
+        required=False,
         widget=forms.Select(attrs={'class': 'form-control custom-select'}),
         label="Cliente"
+    )
+    # Garante que o campo de categoria use o modelo correto
+    category = forms.ModelChoiceField(
+        queryset=Category.objects.all(),
+        required=False,
+        widget=forms.Select(attrs={'class': 'form-control custom-select'}),
+        label="Categoria"
     )
 
     class Meta:
         model = Ticket
-        # Adicionar 'customer' aos fields
-        fields = ['title', 'customer', 'description', 'priority', 'status', 'assigned_to']
+        fields = ['title', 'customer', 'category', 'description', 'priority', 'status', 'assigned_to'] # Adicionado category
         widgets = {
             'title': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Título breve do problema'}),
+            # 'category' é definido acima para garantir o queryset correto
             'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 5, 'placeholder': 'Descreva o problema detalhadamente'}),
             'priority': forms.Select(attrs={'class': 'form-control custom-select'}),
             'status': forms.Select(attrs={'class': 'form-control custom-select'}),
             'assigned_to': forms.Select(attrs={'class': 'form-control custom-select'}),
-            # 'category': forms.Select(attrs={'class': 'form-control custom-select'}), # Se você tiver categorias
         }
         labels = {
             'title': 'Título do Ticket',
@@ -30,26 +55,14 @@ class TicketForm(forms.ModelForm):
             'priority': 'Prioridade',
             'status': 'Status',
             'assigned_to': 'Atribuir Para',
-            # 'category': 'Categoria',
         }
 
     def __init__(self, *args, **kwargs):
         user = kwargs.pop('user', None)
         super().__init__(*args, **kwargs)
-        # O campo 'customer' já foi definido acima, então não precisa de manipulação especial aqui
-        # a menos que você queira filtrar o queryset de clientes com base no usuário, por exemplo.
 
 
 class WorkOrderForm(forms.ModelForm):
-    # Se quiser adicionar cliente diretamente à OS, embora já venha do ticket:
-    # customer = forms.ModelChoiceField(
-    #     queryset=Customer.objects.all(),
-    #     required=False,
-    #     widget=forms.Select(attrs={'class': 'form-control custom-select select2'}), # Adicionar select2 se usado
-    #     label="Cliente da OS"
-    # )
-    # No entanto, vamos manter a OS vinculada ao cliente do ticket por enquanto.
-
     class Meta:
         model = WorkOrder
         fields = ['ticket', 'description', 'status', 'assigned_technician', 'scheduled_date', 'notes']
@@ -58,7 +71,8 @@ class WorkOrderForm(forms.ModelForm):
             'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'placeholder': 'Descrição dos serviços a serem realizados'}),
             'status': forms.Select(attrs={'class': 'form-control custom-select'}),
             'assigned_technician': forms.Select(attrs={'class': 'form-control custom-select'}),
-            'scheduled_date': forms.DateTimeInput(attrs={'class': 'form-control', 'type': 'datetime-local'}),
+            # CORREÇÃO: Adicionado 'format' para corresponder ao padrão HTML5 para datetime-local
+            'scheduled_date': forms.DateTimeInput(format='%Y-%m-%dT%H:%M', attrs={'class': 'form-control', 'type': 'datetime-local'}),
             'notes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'placeholder': 'Observações internas sobre a OS'}),
         }
         labels = {
@@ -72,5 +86,24 @@ class WorkOrderForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # Filtra tickets para mostrar apenas os que não estão fechados ou resolvidos.
         self.fields['ticket'].queryset = Ticket.objects.exclude(status__in=['FECHADO', 'RESOLVIDO'])
+
+
+class TicketCommentForm(forms.ModelForm):
+    # CORREÇÃO: Usar o novo MultipleFileField em vez do FileField padrão
+    attachments = MultipleFileField(
+        required=False,
+        label="Anexar ficheiros"
+    )
+
+    class Meta:
+        model = TicketComment
+        fields = ['comment', 'is_internal_note']
+        widgets = {
+            'comment': forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'placeholder': 'Adicione um comentário ou uma nota interna...'}),
+            'is_internal_note': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+        }
+        labels = {
+            'comment': '', # O placeholder já é suficiente
+            'is_internal_note': 'Marcar como nota interna (visível apenas para a equipa)',
+        }
