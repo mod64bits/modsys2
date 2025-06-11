@@ -22,6 +22,7 @@ def dashboard_view(request):
     start_date_activities = end_date - timedelta(days=30)
     start_date_billing = end_date.replace(month=1, day=1)
 
+    # Obter anos distintos para preencher o filtro de faturamento
     available_years = Orcamento.objects.annotate(
         year=ExtractYear('created_at')
     ).values_list('year', flat=True).distinct().order_by('-year')
@@ -37,7 +38,6 @@ def dashboard_view(request):
         status__in=['PENDENTE', 'EM_EXECUCAO', 'AGENDADA']
     ).select_related('ticket__customer').order_by('-created_at')[:10]
 
-    # CORREÇÃO: Alterado de .select_related('customer') para .select_related('cliente')
     recent_pending_quotes = Orcamento.objects.exclude(
         status__in=['APROVADO', 'REPROVADO', 'CONCLUIDO', 'CANCELADO']
     ).select_related('cliente').order_by('-created_at')[:10]

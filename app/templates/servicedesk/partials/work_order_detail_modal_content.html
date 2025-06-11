@@ -12,16 +12,15 @@
         <dt class="col-sm-4">Ticket Relacionado:</dt>
         <dd class="col-sm-8">
             <a href="#" 
-               data-dismiss="modal" 
-               data-toggle="ajax-modal" 
-               data-target="#ajaxModal" 
+               data-toggle="ajax-modal"
+               data-target="#ajaxModal"
                data-url="{% url 'servicedesk:ticket_detail_modal' work_order.ticket.pk %}">
                 #{{ work_order.ticket.id }} - {{ work_order.ticket.title }}
             </a>
         </dd>
 
         <dt class="col-sm-4">Descrição da OS:</dt>
-        <dd class="col-sm-8" style="white-space: pre-wrap;">{{ work_order.description }}</dd>
+        <dd class="col-sm-8" style="white-space: pre-wrap;">{{ work_order.description|linebreaksbr }}</dd>
 
         <dt class="col-sm-4">Status:</dt>
         <dd class="col-sm-8"><span class="badge {% if work_order.status == 'PENDENTE' %}badge-secondary{% elif work_order.status == 'AGENDADA' %}badge-info{% elif work_order.status == 'EM_EXECUCAO' %}badge-warning{% elif work_order.status == 'CONCLUIDA' %}badge-success{% elif work_order.status == 'CANCELADA' %}badge-danger{% else %}badge-light{% endif %}">{{ work_order.get_status_display }}</span></dd>
@@ -31,7 +30,7 @@
 
         <dt class="col-sm-4">Data Agendada:</dt>
         <dd class="col-sm-8">{{ work_order.scheduled_date|date:"d/m/Y H:i"|default:"Não agendada" }}</dd>
-        
+
         <dt class="col-sm-4">Data de Conclusão:</dt>
         <dd class="col-sm-8">{{ work_order.completion_date|date:"d/m/Y H:i"|default:"Não concluída" }}</dd>
 
@@ -52,7 +51,6 @@
     <button type="button" class="btn btn-secondary" data-dismiss="modal">Fechar</button>
     {% if work_order.status not in "CONCLUIDA,CANCELADA" %}
     <button type="button" class="btn btn-warning"
-            data-dismiss="modal"
             data-toggle="ajax-modal"
             data-target="#ajaxModal"
             data-url="{% url 'servicedesk:work_order_update_modal' work_order.pk %}">
