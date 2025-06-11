@@ -106,7 +106,28 @@
             <div class="card-header"><h3 class="card-title">Tickets Abertos Recentes</h3></div>
             <div class="card-body table-responsive p-0">
                 <table class="table table-sm">
-                    <!-- Conteúdo da tabela de Tickets (sem alterações) -->
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Título</th>
+                            <th>Status</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for ticket in recent_open_tickets %}
+                        <tr>
+                            <td>#{{ ticket.id }}</td>
+                            <td><a href="{% url 'servicedesk:ticket_detail_modal' ticket.pk %}" data-toggle="ajax-modal" data-target="#ajaxModal">{{ ticket.title|truncatechars:40 }}</a></td>
+                            <td><span class="badge badge-{% if ticket.status == 'ABERTO' %}danger{% else %}warning{% endif %}">{{ ticket.get_status_display }}</span></td>
+                            <td>
+                                <button class="btn btn-xs btn-outline-warning" data-toggle="ajax-modal" data-target="#ajaxModal" data-url="{% url 'dashboard:update_status' model_name='ticket' pk=ticket.pk %}" title="Alterar Status"><i class="fas fa-exchange-alt"></i></button>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="4" class="text-center p-3">Nenhum ticket aberto.</td></tr>
+                        {% endfor %}
+                    </tbody>
                 </table>
             </div>
         </div>
@@ -116,7 +137,28 @@
             <div class="card-header"><h3 class="card-title">Ordens de Serviço Abertas Recentes</h3></div>
             <div class="card-body table-responsive p-0">
                 <table class="table table-sm">
-                    <!-- Conteúdo da tabela de OS (sem alterações) -->
+                    <thead>
+                        <tr>
+                            <th>OS</th>
+                            <th>Descrição</th>
+                            <th>Status</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for wo in recent_open_work_orders %}
+                        <tr>
+                            <td>#{{ wo.id }}</td>
+                            <td><a href="{% url 'servicedesk:work_order_detail_modal' wo.pk %}" data-toggle="ajax-modal" data-target="#ajaxModal">{{ wo.description|truncatechars:40 }}</a></td>
+                            <td><span class="badge badge-{% if wo.status == 'PENDENTE' %}secondary{% else %}info{% endif %}">{{ wo.get_status_display }}</span></td>
+                            <td>
+                                <button class="btn btn-xs btn-outline-warning" data-toggle="ajax-modal" data-target="#ajaxModal" data-url="{% url 'dashboard:update_status' model_name='workorder' pk=wo.pk %}" title="Alterar Status"><i class="fas fa-exchange-alt"></i></button>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="4" class="text-center p-3">Nenhuma OS aberta.</td></tr>
+                        {% endfor %}
+                    </tbody>
                 </table>
             </div>
         </div>
@@ -143,8 +185,8 @@
                         {% for orcamento in recent_pending_quotes %}
                         <tr>
                             <td>#{{ orcamento.id }}</td>
-                            <td><a href="{% url 'quotes:orcamento_detail' orcamento.pk %}">{{ orcamento.cliente.nome|truncatechars:40 }}</a></td>
-                            <td>{{ orcamento.get_status_display }}</td>
+                            <td><a href="{% url 'quotes:orcamento_detail' orcamento.pk %}">{{ orcamento.cliente.nome|truncatechars:40|default:"-" }}</a></td>
+                            <td>{{ orcamento.get_status_display|default:"-" }}</td>
                             <td>R$ {{ orcamento.valor_total_orcamento|floatformat:2 }}</td>
                             <td>
                                 <a href="{% url 'quotes:orcamento_detail' orcamento.pk %}" class="btn btn-xs btn-outline-info" title="Ver Detalhes"><i class="fas fa-eye"></i></a>
