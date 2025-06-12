@@ -1,6 +1,6 @@
 # servicedesk/admin.py
 from django.contrib import admin
-from .models import Ticket, WorkOrder, Category, Comment
+from .models import Ticket, WorkOrder, Category
 
 @admin.register(Ticket)
 class TicketAdmin(admin.ModelAdmin):
@@ -43,12 +43,3 @@ class CategoryAdmin(admin.ModelAdmin):
     list_display = ('name', 'description')
     search_fields = ('name',)
 
-@admin.register(Comment)
-class CommentAdmin(admin.ModelAdmin):
-    list_display = ('ticket', 'author', 'created_date', 'text_preview')
-    list_filter = ('created_date', 'author')
-    search_fields = ('text', 'ticket__title', 'author__username')
-
-    def text_preview(self, obj):
-        return obj.text[:50] + "..." if len(obj.text) > 50 else obj.text
-    text_preview.short_description = 'Comentário (início)'

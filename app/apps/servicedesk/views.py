@@ -3,23 +3,20 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.http import JsonResponse, HttpResponse
 from django.template.loader import render_to_string, get_template
 from django.contrib.auth.decorators import login_required
-from .models import Ticket, WorkOrder, User
+from .models import Ticket, WorkOrder, TicketComment, Attachment, Category
 from apps.customers.models import Customer
-from .forms import TicketForm, WorkOrderForm
+from .forms import TicketForm, WorkOrderForm, TicketCommentForm
 from django.contrib import messages
 from django.db.models import Q, Case, When, Value, IntegerField
 from django.db import models
-
-# Para PDF
 from io import BytesIO
-from xhtml2pdf import pisa # Importar pisa
+from xhtml2pdf import pisa
 
-# Função auxiliar para renderizar PDF
 def render_to_pdf(template_src, context_dict={}):
     template = get_template(template_src)
     html  = template.render(context_dict)
     result = BytesIO()
-    pdf = pisa.pisaDocument(BytesIO(html.encode("UTF-8")), result) # Alterado para UTF-8
+    pdf = pisa.pisaDocument(BytesIO(html.encode("UTF-8")), result)
     if not pdf.err:
         return HttpResponse(result.getvalue(), content_type='application/pdf')
     return None
@@ -35,45 +32,127 @@ def ticket_list(request):
 
 @login_required
 def ticket_create_modal(request):
-    initial_data = {}
-    customer_id = request.GET.get('customer_id')
-    if customer_id:
-        try:
-            customer = Customer.objects.get(pk=customer_id)
-            initial_data['customer'] = customer
-        except Customer.DoesNotExist:
-            messages.warning(request, f"Cliente com ID {customer_id} não encontrado.")
-
     if request.method == 'POST':
-        form = TicketForm(request.POST, user=request.user)
+        form = TicketForm(request.POST)
         if form.is_valid():
             ticket = form.save(commit=False)
             if request.user.is_authenticated:
                 ticket.created_by = request.user
             ticket.save()
-            if request.headers.get('x-requested-with') == 'XMLHttpRequest':
-                return JsonResponse({'success': True, 'message': 'Ticket criado com sucesso!'})
-            messages.success(request, 'Ticket criado com sucesso!')
-            return redirect('servicedesk:ticket_list')
+            return JsonResponse({'success': True, 'message': 'Ticket criado com sucesso!'})
         else:
-            if request.headers.get('x-requested-with') == 'XMLHttpRequest':
-                return JsonResponse({'success': False, 'errors': form.errors.as_json()}, status=400)
-            messages.error(request, 'Erro ao criar o ticket. Verifique os dados.')
+            return JsonResponse({'success': False, 'errors': form.errors.as_json()}, status=400)
     else:
-        form = TicketForm(user=request.user, initial=initial_data)
-
+        form = TicketForm()
     context = {
         'form': form,
-        'form_title': 'Abrir Novo Ticket',
+        'form_title': 'Novo Ticket',
         'form_action_url': request.path
     }
+    html_form = render_to_string('servicedesk/partials/ticket_form_modal_content.html', context, request=request)
+    return HttpResponse(html_form)
 
-    if request.headers.get('x-requested-with') == 'XMLHttpRequest':
-        html_form = render_to_string('servicedesk/partials/ticket_form_modal_content.html', context, request=request)
-        return HttpResponse(html_form)
+@login_required
+def ticket_delete_modal(request, pk):
+    ticket = get_object_or_404(Ticket, pk=pk)
+    if request.method == 'POST':
+        ticket.delete()
+        return JsonResponse({'success': True, 'message': 'Ticket excluído com sucesso!'})
+    context = {'ticket': ticket, 'delete_title': f'Excluir Ticket #{pk}'}
+    html_form = render_to_string('servicedesk/partials/ticket_delete_confirm_modal_content.html', context, request=request)
+    return HttpResponse(html_form)
 
-    return JsonResponse({'error': 'Acesso direto não permitido ou esperado.'}, status=403)
+@login_required
+def ticket_pdf_view(request, pk):
+    ticket = get_object_or_404(Ticket, pk=pk)
+    work_orders = ticket.work_orders.all().order_by('created_at')
 
+    public_comments = ticket.comments.filter(
+        is_internal_note=False,
+        comment_type=TicketComment.CommentType.COMMENT
+    ).select_related('author').prefetch_related('attachments').order_by('created_at')
+
+    context = {
+        'ticket': ticket,
+        'work_orders': work_orders,
+        'public_comments': public_comments,
+        'company_name': 'Nome da Sua Empresa Aqui'
+    }
+    pdf = render_to_pdf('servicedesk/pdf/ticket_pdf_template.html', context)
+    if pdf:
+        response = HttpResponse(pdf, content_type='application/pdf')
+        filename = f"Ticket_{ticket.id}.pdf"
+        content = f"inline; filename='{filename}'"
+        response['Content-Disposition'] = content
+        return response
+    return HttpResponse("Erro ao gerar PDF.", status=500)
+
+@login_required
+def work_order_list(request):
+    work_orders = WorkOrder.objects.all()
+    return render(request, 'servicedesk/work_order_list.html', {'work_orders': work_orders})
+
+@login_required
+def work_order_create_modal(request):
+    # Lógica para criar OS
+    pass
+
+@login_required
+def work_order_update_modal(request, pk):
+    # Lógica para atualizar OS
+    pass
+
+@login_required
+def work_order_detail_modal(request, pk):
+    work_order = get_object_or_404(WorkOrder, pk=pk)
+    context = {'work_order': work_order, 'detail_title': f'Detalhes da OS #{pk}'}
+    html_content = render_to_string('servicedesk/partials/work_order_detail_modal_content.html', context, request=request)
+    return HttpResponse(html_content)
+
+@login_required
+def work_order_delete_modal(request, pk):
+    # Lógica para apagar OS
+    pass
+
+@login_required
+def work_order_pdf_view(request, pk):
+    # Lógica para gerar PDF da OS
+    pass
+
+@login_required
+def add_ticket_comment(request, pk):
+    ticket = get_object_or_404(Ticket, pk=pk)
+    if request.method == 'POST':
+        form = TicketCommentForm(request.POST, request.FILES)
+        if form.is_valid():
+            comment = form.save(commit=False)
+            comment.ticket = ticket
+            comment.author = request.user
+            comment.save()
+
+            for f in request.FILES.getlist('attachments'):
+                Attachment.objects.create(
+                    comment=comment,
+                    file=f,
+                    uploaded_by=request.user
+                )
+
+            work_orders = ticket.work_orders.all()
+            comments = ticket.comments.select_related('author').prefetch_related('attachments').all()
+            comment_form = TicketCommentForm()
+            context = {
+                'ticket': ticket,
+                'work_orders': work_orders,
+                'comments': comments,
+                'comment_form': comment_form,
+                'detail_title': f'Detalhes do Ticket #{ticket.pk}'
+            }
+            html_content = render_to_string('servicedesk/partials/ticket_detail_modal_content.html', context, request=request)
+            return JsonResponse({'success': True, 'html': html_content})
+        else:
+            return JsonResponse({'success': False, 'errors': form.errors.as_json()}, status=400)
+
+    return JsonResponse({'success': False, 'error': 'Pedido inválido.'}, status=400)
 
 @login_required
 def ticket_update_modal(request, pk):
@@ -84,21 +163,50 @@ def ticket_update_modal(request, pk):
         messages.warning(request, f'Ticket {ticket.get_status_display()} não pode ser editado.')
         return redirect('servicedesk:ticket_list')
 
-
     if request.method == 'POST':
-        form = TicketForm(request.POST, instance=ticket, user=request.user)
+        form = TicketForm(request.POST, instance=ticket)
         if form.is_valid():
-            form.save()
-            if request.headers.get('x-requested-with') == 'XMLHttpRequest':
-                return JsonResponse({'success': True, 'message': 'Ticket atualizado com sucesso!'})
-            messages.success(request, 'Ticket atualizado com sucesso!')
-            return redirect('servicedesk:ticket_list')
+            original_status = ticket.get_status_display()
+            original_assigned_to = ticket.assigned_to
+
+            updated_ticket = form.save()
+
+            log_entry = []
+            if original_status != updated_ticket.get_status_display():
+                log_entry.append(f'Status alterado de "{original_status}" para "{updated_ticket.get_status_display()}".')
+
+            if original_assigned_to != updated_ticket.assigned_to:
+                old_assignee = original_assigned_to.username if original_assigned_to else "ninguém"
+                new_assignee = updated_ticket.assigned_to.username if updated_ticket.assigned_to else "ninguém"
+                log_entry.append(f'Ticket atribuído a {new_assignee} (anteriormente {old_assignee}).')
+
+            if log_entry:
+                TicketComment.objects.create(
+                    ticket=updated_ticket,
+                    author=request.user,
+                    comment="\n".join(log_entry),
+                    comment_type=TicketComment.CommentType.LOG,
+                    is_internal_note=True
+                )
+
+            work_orders = updated_ticket.work_orders.all()
+            comments = updated_ticket.comments.select_related('author').prefetch_related('attachments').all()
+            comment_form = TicketCommentForm()
+            context = {
+                'ticket': updated_ticket,
+                'work_orders': work_orders,
+                'comments': comments,
+                'comment_form': comment_form,
+                'detail_title': f'Detalhes do Ticket #{updated_ticket.pk}'
+            }
+            html_content = render_to_string('servicedesk/partials/ticket_detail_modal_content.html', context, request=request)
+            return JsonResponse({'success': True, 'html': html_content, 'message': 'Ticket atualizado com sucesso!'})
         else:
             if request.headers.get('x-requested-with') == 'XMLHttpRequest':
                 return JsonResponse({'success': False, 'errors': form.errors.as_json()}, status=400)
             messages.error(request, 'Erro ao atualizar o ticket.')
     else:
-        form = TicketForm(instance=ticket, user=request.user)
+        form = TicketForm(instance=ticket)
 
     context = {
         'form': form,
@@ -106,21 +214,23 @@ def ticket_update_modal(request, pk):
         'form_title': f'Editar Ticket #{ticket.pk}',
         'form_action_url': request.path
     }
-
     if request.headers.get('x-requested-with') == 'XMLHttpRequest':
         html_form = render_to_string('servicedesk/partials/ticket_form_modal_content.html', context, request=request)
         return HttpResponse(html_form)
-
-    return JsonResponse({'error': 'Acesso direto não permitido ou esperado.'}, status=403)
-
+    return JsonResponse({'error': 'Acesso direto não permitido.'}, status=403)
 
 @login_required
 def ticket_detail_modal(request, pk):
     ticket = get_object_or_404(Ticket, pk=pk)
     work_orders = ticket.work_orders.all()
+    comments = ticket.comments.select_related('author').prefetch_related('attachments').all()
+    comment_form = TicketCommentForm()
+
     context = {
         'ticket': ticket,
         'work_orders': work_orders,
+        'comments': comments,
+        'comment_form': comment_form,
         'detail_title': f'Detalhes do Ticket #{ticket.pk}'
     }
 
@@ -129,203 +239,3 @@ def ticket_detail_modal(request, pk):
         return HttpResponse(html_content)
 
     return JsonResponse({'error': 'Acesso direto não permitido ou esperado.'}, status=403)
-
-
-@login_required
-def ticket_delete_modal(request, pk):
-    ticket = get_object_or_404(Ticket, pk=pk)
-    if request.method == 'POST':
-        ticket_id = ticket.id
-        ticket.delete()
-        if request.headers.get('x-requested-with') == 'XMLHttpRequest':
-            return JsonResponse({'success': True, 'message': f'Ticket #{ticket_id} excluído com sucesso!'})
-        messages.success(request, f'Ticket #{ticket_id} excluído com sucesso!')
-        return redirect('servicedesk:ticket_list')
-
-    context = {
-        'ticket': ticket,
-        'delete_title': f'Confirmar Exclusão do Ticket #{ticket.pk}',
-        'form_action_url': request.path
-    }
-
-    if request.headers.get('x-requested-with') == 'XMLHttpRequest':
-        html_content = render_to_string('servicedesk/partials/ticket_delete_confirm_modal_content.html', context, request=request)
-        return HttpResponse(html_content)
-
-    return JsonResponse({'error': 'Acesso direto não permitido ou esperado.'}, status=403)
-
-
-# Views para WorkOrder
-@login_required
-def work_order_list(request):
-    work_orders = WorkOrder.objects.all()
-    tickets_for_wo = Ticket.objects.exclude(status__in=['FECHADO', 'RESOLVIDO'])
-
-    context = {
-        'work_orders': work_orders,
-        'tickets_for_wo_creation': tickets_for_wo,
-        'page_title': 'Lista de Ordens de Serviço'
-    }
-    return render(request, 'servicedesk/work_order_list.html', context)
-
-@login_required
-def work_order_create_modal(request):
-    initial_data = {}
-    ticket_id = request.GET.get('ticket_id')
-    customer_id = request.GET.get('customer_id')
-
-    if ticket_id:
-        try:
-            ticket = Ticket.objects.exclude(status__in=['FECHADO', 'RESOLVIDO']).get(pk=ticket_id)
-            initial_data['ticket'] = ticket
-        except Ticket.DoesNotExist:
-            messages.warning(request, f"Ticket com ID {ticket_id} não encontrado ou não apto para novas OS.")
-    elif customer_id:
-        try:
-            customer = Customer.objects.get(pk=customer_id)
-        except Customer.DoesNotExist:
-             messages.warning(request, f"Cliente com ID {customer_id} não encontrado.")
-
-
-    if request.method == 'POST':
-        form = WorkOrderForm(request.POST)
-        if form.is_valid():
-            work_order = form.save(commit=False)
-            work_order.save()
-            if request.headers.get('x-requested-with') == 'XMLHttpRequest':
-                return JsonResponse({'success': True, 'message': 'Ordem de Serviço criada com sucesso!'})
-            messages.success(request, 'Ordem de Serviço criada com sucesso!')
-            return redirect('servicedesk:work_order_list')
-        else:
-            if request.headers.get('x-requested-with') == 'XMLHttpRequest':
-                return JsonResponse({'success': False, 'errors': form.errors.as_json()}, status=400)
-            messages.error(request, 'Erro ao criar a Ordem de Serviço. Verifique os dados.')
-    else:
-        form = WorkOrderForm(initial=initial_data)
-        if customer_id and not ticket_id:
-             form.fields['ticket'].queryset = Ticket.objects.filter(customer_id=customer_id).exclude(status__in=['FECHADO', 'RESOLVIDO'])
-
-
-    context = {
-        'form': form,
-        'form_title': 'Nova Ordem de Serviço',
-        'form_action_url': request.path
-    }
-
-    if request.headers.get('x-requested-with') == 'XMLHttpRequest':
-        html_form = render_to_string('servicedesk/partials/work_order_form_modal_content.html', context, request=request)
-        return HttpResponse(html_form)
-
-    return JsonResponse({'error': 'Acesso direto não permitido ou esperado.'}, status=403)
-
-@login_required
-def work_order_update_modal(request, pk):
-    work_order = get_object_or_404(WorkOrder, pk=pk)
-    if work_order.status in ['CONCLUIDA', 'CANCELADA']:
-        if request.headers.get('x-requested-with') == 'XMLHttpRequest':
-            return HttpResponse(f'<div class="modal-header"><h5 class="modal-title">OS #{work_order.pk}</h5><button type="button" class="close" data-dismiss="modal">&times;</button></div><div class="modal-body"><p class="alert alert-warning">Esta OS está {work_order.get_status_display()} e não pode ser editada.</p></div><div class="modal-footer"><button type="button" class="btn btn-secondary" data-dismiss="modal">Fechar</button></div>')
-        messages.warning(request, f'OS {work_order.get_status_display()} não pode ser editada.')
-        return redirect('servicedesk:work_order_list')
-
-    if request.method == 'POST':
-        form = WorkOrderForm(request.POST, instance=work_order)
-        if form.is_valid():
-            form.save()
-            if request.headers.get('x-requested-with') == 'XMLHttpRequest':
-                return JsonResponse({'success': True, 'message': 'Ordem de Serviço atualizada com sucesso!'})
-            messages.success(request, 'Ordem de Serviço atualizada com sucesso!')
-            return redirect('servicedesk:work_order_list')
-        else:
-            if request.headers.get('x-requested-with') == 'XMLHttpRequest':
-                return JsonResponse({'success': False, 'errors': form.errors.as_json()}, status=400)
-            messages.error(request, 'Erro ao atualizar a Ordem de Serviço.')
-    else:
-        form = WorkOrderForm(instance=work_order)
-
-    context = {
-        'form': form,
-        'work_order': work_order,
-        'form_title': f'Editar Ordem de Serviço #{work_order.pk}',
-        'form_action_url': request.path
-    }
-
-    if request.headers.get('x-requested-with') == 'XMLHttpRequest':
-        html_form = render_to_string('servicedesk/partials/work_order_form_modal_content.html', context, request=request)
-        return HttpResponse(html_form)
-
-    return JsonResponse({'error': 'Acesso direto não permitido ou esperado.'}, status=403)
-
-@login_required
-def work_order_detail_modal(request, pk):
-    work_order = get_object_or_404(WorkOrder, pk=pk)
-    context = {
-        'work_order': work_order,
-        'detail_title': f'Detalhes da Ordem de Serviço #{work_order.pk}'
-    }
-
-    if request.headers.get('x-requested-with') == 'XMLHttpRequest':
-        html_content = render_to_string('servicedesk/partials/work_order_detail_modal_content.html', context, request=request)
-        return HttpResponse(html_content)
-
-    return JsonResponse({'error': 'Acesso direto não permitido ou esperado.'}, status=403)
-
-@login_required
-def work_order_delete_modal(request, pk):
-    work_order = get_object_or_404(WorkOrder, pk=pk)
-    if request.method == 'POST':
-        work_order_id = work_order.id
-        work_order.delete()
-        if request.headers.get('x-requested-with') == 'XMLHttpRequest':
-            return JsonResponse({'success': True, 'message': f'Ordem de Serviço #{work_order_id} excluída com sucesso!'})
-        messages.success(request, f'Ordem de Serviço #{work_order_id} excluída com sucesso!')
-        return redirect('servicedesk:work_order_list')
-
-    context = {
-        'work_order': work_order,
-        'delete_title': f'Confirmar Exclusão da Ordem de Serviço #{work_order.pk}',
-        'form_action_url': request.path
-    }
-
-    if request.headers.get('x-requested-with') == 'XMLHttpRequest':
-        html_content = render_to_string('servicedesk/partials/work_order_delete_confirm_modal_content.html', context, request=request)
-        return HttpResponse(html_content)
-
-    return JsonResponse({'error': 'Acesso direto não permitido ou esperado.'}, status=403)
-
-
-# Novas Views para PDF
-@login_required
-def ticket_pdf_view(request, pk):
-    ticket = get_object_or_404(Ticket, pk=pk)
-    work_orders = ticket.work_orders.all().order_by('created_at')
-    context = {
-        'ticket': ticket,
-        'work_orders': work_orders,
-        'company_name': 'mod64bits' # Você pode pegar isso das configurações ou de um modelo
-    }
-    pdf = render_to_pdf('servicedesk/pdf/ticket_pdf_template.html', context)
-    if pdf:
-        response = HttpResponse(pdf, content_type='application/pdf')
-        filename = f"Ticket_{ticket.id}.pdf"
-        content = f"inline; filename='{filename}'" # Mostra no navegador
-        # content = f"attachment; filename='{filename}'" # Força download
-        response['Content-Disposition'] = content
-        return response
-    return HttpResponse("Erro ao gerar PDF.", status=500)
-
-@login_required
-def work_order_pdf_view(request, pk):
-    work_order = get_object_or_404(WorkOrder, pk=pk)
-    context = {
-        'work_order': work_order,
-        'company_name': 'mod64bits'
-    }
-    pdf = render_to_pdf('servicedesk/pdf/work_order_pdf_template.html', context)
-    if pdf:
-        response = HttpResponse(pdf, content_type='application/pdf')
-        filename = f"OS_{work_order.id}.pdf"
-        content = f"inline; filename='{filename}'"
-        # content = f"attachment; filename='{filename}'"
-        response['Content-Disposition'] = content
-        return response
-    return HttpResponse("Erro ao gerar PDF.", status=500)

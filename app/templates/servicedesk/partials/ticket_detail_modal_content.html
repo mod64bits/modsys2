@@ -5,54 +5,40 @@
     </button>
 </div>
 <div class="modal-body">
-    <dl class="row">
-        <dt class="col-sm-4">ID do Ticket:</dt>
-        <dd class="col-sm-8">{{ ticket.id }}</dd>
+    <!-- Nav tabs -->
+    <ul class="nav nav-tabs" id="ticketDetailTab" role="tablist">
+        <li class="nav-item">
+            <a class="nav-link active" id="details-tab" data-toggle="tab" href="#details-{{ ticket.pk }}" role="tab">Detalhes</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" id="timeline-tab" data-toggle="tab" href="#timeline-{{ ticket.pk }}" role="tab">Histórico e Comentários <span class="badge badge-pill badge-secondary">{{ comments.count }}</span></a>
+        </li>
+    </ul>
 
-        <dt class="col-sm-4">Título:</dt>
-        <dd class="col-sm-8">{{ ticket.title }}</dd>
-
-        <dt class="col-sm-4">Cliente:</dt>
-        <dd class="col-sm-8">
-            {% if ticket.customer %}
-                <a href="#"
-                   data-toggle="ajax-modal"
-                   data-target="#ajaxModal"
-                   data-url="{% url 'customers:customer_detail_modal' ticket.customer.pk %}">
-                    {{ ticket.customer.nome }}
-                </a>
-            {% else %}
-                <span class="text-muted">Nenhum cliente associado</span>
-            {% endif %}
-        </dd>
-
-        <dt class="col-sm-4">Descrição:</dt>
-        <dd class="col-sm-8" style="white-space: pre-wrap;">{{ ticket.description|linebreaksbr }}</dd>
-
-        <dt class="col-sm-4">Status:</dt>
-        <dd class="col-sm-8"><span class="badge badge-{% if ticket.status == 'ABERTO' %}danger{% elif ticket.status == 'EM_ANDAMENTO' %}warning{% elif ticket.status == 'RESOLVIDO' %}success{% elif ticket.status == 'FECHADO' %}secondary{% else %}info{% endif %}">{{ ticket.get_status_display }}</span></dd>
-
-        <dt class="col-sm-4">Prioridade:</dt>
-        <dd class="col-sm-8"><span class="badge badge-{% if ticket.priority == 'ALTA' or ticket.priority == 'URGENTE' %}danger{% elif ticket.priority == 'MEDIA' %}warning{% else %}primary{% endif %}">{{ ticket.get_priority_display }}</span></dd>
-
-        <dt class="col-sm-4">Criado Por:</dt>
-        <dd class="col-sm-8">{{ ticket.created_by.username|default:"N/A" }}</dd>
-
-        <dt class="col-sm-4">Atribuído Para:</dt>
-        <dd class="col-sm-8">{{ ticket.assigned_to.username|default:"Não atribuído" }}</dd>
-
-        <dt class="col-sm-4">Data de Criação:</dt>
-        <dd class="col-sm-8">{{ ticket.created_at|date:"d/m/Y H:i:s" }}</dd>
-
-        <dt class="col-sm-4">Última Atualização:</dt>
-        <dd class="col-sm-8">{{ ticket.updated_at|date:"d/m/Y H:i:s" }}</dd>
-    </dl>
-
-    <hr>
-    <h5>Ordens de Serviço Relacionadas</h5>
-    {% if work_orders %}
-        {% for wo in work_orders %}
-            <div class="card card-sm mb-2">
+    <!-- Tab panes -->
+    <div class="tab-content mt-3">
+        <div class="tab-pane fade show active" id="details-{{ ticket.pk }}" role="tabpanel">
+            <dl class="row">
+                <dt class="col-sm-4">ID do Ticket:</dt> <dd class="col-sm-8">{{ ticket.id }}</dd>
+                <dt class="col-sm-4">Título:</dt> <dd class="col-sm-8">{{ ticket.title }}</dd>
+                <dt class="col-sm-4">Cliente:</dt> <dd class="col-sm-8">
+                    {% if ticket.customer %}
+                        <a href="#" data-toggle="ajax-modal" data-target="#ajaxModal" data-url="{% url 'customers:customer_detail_modal' ticket.customer.pk %}">{{ ticket.customer.nome }}</a>
+                    {% else %}
+                        <span class="text-muted">Nenhum</span>
+                    {% endif %}
+                </dd>
+                <dt class="col-sm-4">Status:</dt> <dd class="col-sm-8"><span class="badge badge-{% if ticket.status == 'ABERTO' %}danger{% elif ticket.status == 'EM_ANDAMENTO' %}warning{% elif ticket.status == 'RESOLVIDO' %}success{% elif ticket.status == 'FECHADO' %}secondary{% else %}info{% endif %}">{{ ticket.get_status_display }}</span></dd>
+                <dt class="col-sm-4">Prioridade:</dt> <dd class="col-sm-8"><span class="badge badge-{% if ticket.priority == 'ALTA' or ticket.priority == 'URGENTE' %}danger{% elif ticket.priority == 'MEDIA' %}warning{% else %}primary{% endif %}">{{ ticket.get_priority_display }}</span></dd>
+                <dt class="col-sm-4">Descrição:</dt> <dd class="col-sm-8" style="white-space: pre-wrap;">{{ ticket.description|linebreaksbr }}</dd>
+                <dt class="col-sm-4">Criado Por:</dt> <dd class="col-sm-8">{{ ticket.created_by.username|default:"N/A" }}</dd>
+                <dt class="col-sm-4">Atribuído Para:</dt> <dd class="col-sm-8">{{ ticket.assigned_to.username|default:"Não atribuído" }}</dd>
+                <dt class="col-sm-4">Criado Em:</dt> <dd class="col-sm-8">{{ ticket.created_at|date:"d/m/Y H:i:s" }}</dd>
+            </dl>
+            <hr>
+            <h5>Ordens de Serviço Relacionadas</h5>
+            {% for wo in work_orders %}
+             <div class="card card-sm mb-2">
                 <div class="card-body p-2">
                     <p class="mb-1">
                         <strong>
@@ -64,49 +50,95 @@
                             </a>
                         </strong> - Status: {{ wo.get_status_display }}
                     </p>
-                    <p class="mb-1 small">{{ wo.description|truncatechars:100 }}</p>
-                    <p class="mb-0 small">
-                        <small>Técnico: {{ wo.assigned_technician.username|default:"N/A" }} | Agendada: {{ wo.scheduled_date|date:"d/m/y H:i"|default:"-" }}</small>
-                         <span class="float-right">
-                            {% if wo.status not in "CONCLUIDA,CANCELADA" %}
-                            <button type="button" class="btn btn-xs btn-outline-warning py-0 px-1"
-                                    data-toggle="ajax-modal"
-                                    data-target="#ajaxModal"
-                                    data-url="{% url 'servicedesk:work_order_update_modal' wo.pk %}"
-                                    title="Editar OS">
-                                <i class="fas fa-edit fa-xs"></i>
-                            </button>
-                            {% endif %}
-                            <button type="button" class="btn btn-xs btn-outline-danger py-0 px-1"
-                                    data-toggle="ajax-modal"
-                                    data-target="#ajaxModal"
-                                    data-url="{% url 'servicedesk:work_order_delete_modal' wo.pk %}"
-                                    title="Excluir OS">
-                                <i class="fas fa-trash fa-xs"></i>
-                            </button>
-                        </span>
-                    </p>
                 </div>
             </div>
-        {% empty %}
+            {% empty %}
             <p>Nenhuma ordem de serviço associada a este ticket.</p>
-        {% endfor %}
-    {% else %}
-        <p>Nenhuma ordem de serviço associada a este ticket.</p>
-    {% endif %}
-    {% if ticket.status not in "FECHADO,RESOLVIDO" %}
-    <button type="button" class="btn btn-sm btn-success mt-2"
-            data-toggle="ajax-modal"
-            data-target="#ajaxModal"
-            data-url="{% url 'servicedesk:work_order_create_modal' %}?ticket_id={{ ticket.pk }}">
-        <i class="fas fa-plus"></i> Nova OS para este Ticket
-    </button>
-    {% endif %}
+            {% endfor %}
+        </div>
 
+        <div class="tab-pane fade" id="timeline-{{ ticket.pk }}" role="tabpanel">
+            <!-- Formulário para adicionar comentário -->
+            <form action="{% url 'servicedesk:add_ticket_comment' ticket.pk %}" method="post" enctype="multipart/form-data" class="mb-3 ajax-form">
+                {% csrf_token %}
+                <div class="form-group">
+                    {{ comment_form.comment }}
+                </div>
+                <div class="form-row align-items-center">
+                    <div class="col-auto">
+                        <div class="form-group">
+                           {{ comment_form.attachments }}
+                        </div>
+                    </div>
+                    <div class="col-auto">
+                        <div class="form-check">
+                            {{ comment_form.is_internal_note }}
+                            <label class="form-check-label" for="{{ comment_form.is_internal_note.id_for_label }}">{{ comment_form.is_internal_note.label }}</label>
+                        </div>
+                    </div>
+                    <div class="col">
+                        <button type="submit" class="btn btn-primary btn-sm float-right">Adicionar Comentário</button>
+                    </div>
+                </div>
+            </form>
+            <hr>
+
+            <!-- Timeline de comentários -->
+            <div class="timeline" style="max-height: 400px; overflow-y: auto;">
+                {% for comment in comments reversed %}
+                <div>
+                    {% if comment.comment_type == 'LOG' %}
+                        <i class="fas fa-history bg-gray"></i>
+                        <div class="timeline-item">
+                            <span class="time"><i class="fas fa-clock"></i> {{ comment.created_at|date:"d/m/Y H:i" }}</span>
+                            <h3 class="timeline-header no-border">
+                                <small>
+                                    Atividade registada por <strong>{{ comment.author.username|default:"Sistema" }}</strong>:
+                                    <span class="text-muted">{{ comment.comment|linebreaksbr }}</span>
+                                </small>
+                            </h3>
+                        </div>
+                    {% else %}
+                        {% if comment.is_internal_note %}
+                            <i class="fas fa-user-secret bg-warning"></i>
+                        {% else %}
+                            <i class="fas fa-comments bg-primary"></i>
+                        {% endif %}
+                        <div class="timeline-item">
+                            <span class="time"><i class="fas fa-clock"></i> {{ comment.created_at|date:"d/m/Y H:i" }}</span>
+                            <h3 class="timeline-header">
+                                <a href="#">{{ comment.author.username|default:"Utilizador" }}</a>
+                                {% if comment.is_internal_note %}<span class="badge badge-warning ml-2">Nota Interna</span>{% endif %}
+                            </h3>
+                            <div class="timeline-body">{{ comment.comment|linebreaksbr }}</div>
+                            {% if comment.attachments.all %}
+                            <div class="timeline-footer">
+                                {% for attachment in comment.attachments.all %}
+                                <a href="{{ attachment.file.url }}" target="_blank" class="btn btn-sm btn-outline-secondary mr-1">
+                                    <i class="fas fa-paperclip"></i> {{ attachment.filename }} <small>({{ attachment.filesize }})</small>
+                                </a>
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                        </div>
+                    {% endif %}
+                </div>
+                {% empty %}
+                <div>
+                    <i class="fas fa-info-circle bg-info"></i>
+                    <div class="timeline-item">
+                        <div class="timeline-body">Nenhum comentário ou atividade registada para este ticket.</div>
+                    </div>
+                </div>
+                {% endfor %}
+                <div><i class="fas fa-clock bg-gray"></i></div>
+            </div>
+        </div>
+    </div>
 </div>
 <div class="modal-footer">
     <a href="{% url 'servicedesk:ticket_pdf' ticket.pk %}" target="_blank" class="btn btn-info mr-auto">
-        <i class="fas fa-file-pdf"></i> Gerar PDF do Ticket
+        <i class="fas fa-file-pdf"></i> Gerar PDF
     </a>
     <button type="button" class="btn btn-secondary" data-dismiss="modal">Fechar</button>
     {% if ticket.status not in "FECHADO,RESOLVIDO" %}

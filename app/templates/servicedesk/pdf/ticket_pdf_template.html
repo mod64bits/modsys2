@@ -6,20 +6,25 @@
     <style>
         @page {
             size: a4 portrait;
-            margin: 1.5cm;
+            margin: 2.5cm 1.5cm; /* Margens superior/inferior maiores */
             @frame header_frame {
                 -pdf-frame-content: header_content;
-                left: 50pt; width: 512pt; top: 20pt; height: 50pt;
+                left: 1.5cm; right: 1.5cm;
+                top: 1cm;
+                height: 1.5cm;
             }
             @frame footer_frame {
                 -pdf-frame-content: footer_content;
-                left: 50pt; width: 512pt; top: 772pt; height: 20pt;
+                left: 1.5cm; right: 1.5cm;
+                bottom: 1cm;
+                height: 1cm;
             }
         }
         body {
             font-family: "Helvetica", "Arial", sans-serif;
             font-size: 10pt;
             color: #333;
+            word-wrap: break-word;
         }
         h1 {
             text-align: center;
@@ -39,52 +44,63 @@
             width: 100%;
             border-collapse: collapse;
             margin-bottom: 15px;
+            page-break-inside: auto;
         }
         th, td {
             border: 1px solid #ddd;
-            padding: 6px;
+            padding: 8px;
             text-align: left;
             vertical-align: top;
+            word-wrap: break-word;
         }
         th {
             background-color: #f2f2f2;
             font-weight: bold;
             width: 25%;
         }
-        .description-box {
+        thead {
+            display: table-header-group;
+        }
+        tr {
+            page-break-inside: avoid;
+        }
+        .description-box, .comment-body {
             border: 1px solid #ddd;
             padding: 10px;
             background-color: #f9f9f9;
             margin-bottom: 15px;
-            white-space: pre-wrap; /* Mantém quebras de linha e espaços */
+            white-space: pre-wrap;
+            word-wrap: break-word;
         }
-        .footer {
-            text-align: center;
+        .footer { text-align: center; font-size: 8pt; color: #777; }
+        .header { text-align: center; font-size: 9pt; color: #555; }
+
+        /* Estilos para a secção de comentários */
+        .comment-box {
+            border: 1px solid #eee;
+            padding: 8px;
+            margin-bottom: 10px;
+            page-break-inside: avoid;
+        }
+        .comment-header {
+            font-size: 8pt;
+            color: #555;
+            border-bottom: 1px dotted #ccc;
+            padding-bottom: 4px;
+            margin-bottom: 6px;
+        }
+        .comment-attachments {
             font-size: 8pt;
             color: #777;
+            margin-top: 8px;
+            border-top: 1px dotted #eee;
+            padding-top: 5px;
         }
-         .header {
-            text-align: center;
-            font-size: 9pt;
-            color: #555;
-        }
-        .badge {
-            padding: 3px 6px;
-            font-size: 9pt;
-            border-radius: 4px;
-            color: white;
-        }
-        .badge-danger { background-color: #dc3545; }
-        .badge-warning { background-color: #ffc107; color: #212529;}
-        .badge-success { background-color: #28a745; }
-        .badge-secondary { background-color: #6c757d; }
-        .badge-info { background-color: #17a2b8; }
-        .badge-primary { background-color: #007bff; }
     </style>
 </head>
 <body>
     <div id="header_content" class="header">
-        {{ company_name|default:"mod64bits" }} - Relatório de Ticket
+        <strong>{{ company_name|default:"Sua Empresa" }}</strong> - Relatório de Ticket
     </div>
     <div id="footer_content" class="footer">
         Página <pdf:pagenumber /> de <pdf:pagecount />
@@ -95,18 +111,12 @@
     <table>
         <tr><th>Título</th><td>{{ ticket.title }}</td></tr>
         <tr><th>Cliente</th><td>{{ ticket.customer.nome|default:"N/A" }}</td></tr>
-        <tr><th>Status</th><td><span class="badge {% if ticket.status == 'ABERTO' %}badge-danger{% elif ticket.status == 'EM_ANDAMENTO' %}badge-warning{% elif ticket.status == 'RESOLVIDO' %}badge-success{% elif ticket.status == 'FECHADO' %}badge-secondary{% else %}badge-info{% endif %}">{{ ticket.get_status_display }}</span></td></tr>
-        <tr><th>Prioridade</th><td><span class="badge {% if ticket.priority == 'ALTA' or ticket.priority == 'URGENTE' %}badge-danger{% elif ticket.priority == 'MEDIA' %}badge-warning{% else %}badge-primary{% endif %}">{{ ticket.get_priority_display }}</span></td></tr>
+        <tr><th>Status</th><td>{{ ticket.get_status_display }}</td></tr>
+        <tr><th>Prioridade</th><td>{{ ticket.get_priority_display }}</td></tr>
+        <tr><th>Categoria</th><td>{{ ticket.category.name|default:"N/A" }}</td></tr>
         <tr><th>Criado Por</th><td>{{ ticket.created_by.username|default:"N/A" }}</td></tr>
         <tr><th>Atribuído Para</th><td>{{ ticket.assigned_to.username|default:"Não atribuído" }}</td></tr>
         <tr><th>Data de Criação</th><td>{{ ticket.created_at|date:"d/m/Y H:i:s" }}</td></tr>
-        <tr><th>Última Atualização</th><td>{{ ticket.updated_at|date:"d/m/Y H:i:s" }}</td></tr>
-        {% if ticket.resolution_details %}
-        <tr><th>Detalhes da Resolução</th><td>{{ ticket.resolution_details|linebreaksbr }}</td></tr>
-        {% endif %}
-        {% if ticket.closed_at %}
-        <tr><th>Data de Fechamento</th><td>{{ ticket.closed_at|date:"d/m/Y H:i:s" }}</td></tr>
-        {% endif %}
     </table>
 
     <h2>Descrição</h2>
@@ -119,11 +129,11 @@
     <table>
         <thead>
             <tr>
-                <td style="background-color: #f8f9fa; font-weight:bold;">ID OS</td>
-                <td style="background-color: #f8f9fa; font-weight:bold;">Descrição</td>
-                <td style="background-color: #f8f9fa; font-weight:bold;">Status</td>
-                <td style="background-color: #f8f9fa; font-weight:bold;">Técnico</td>
-                <td style="background-color: #f8f9fa; font-weight:bold;">Conclusão</td>
+                <th>ID OS</th>
+                <th>Descrição</th>
+                <th>Status</th>
+                <th>Técnico</th>
+                <th>Conclusão</th>
             </tr>
         </thead>
         <tbody>
@@ -138,6 +148,30 @@
             {% endfor %}
         </tbody>
     </table>
+    {% endif %}
+
+    <!-- Nova Secção de Comentários -->
+    {% if public_comments %}
+    <h2>Histórico de Comentários</h2>
+    {% for comment in public_comments %}
+        <div class="comment-box">
+            <p class="comment-header">
+                <strong>{{ comment.author.get_full_name|default:comment.author.username|default:"Utilizador" }}</strong> em
+                <span class="comment-date">{{ comment.created_at|date:"d/m/Y H:i" }}</span>
+            </p>
+            <div class="comment-body">
+                {{ comment.comment|linebreaksbr }}
+            </div>
+            {% if comment.attachments.all %}
+                <div class="comment-attachments">
+                    <strong>Anexos:</strong>
+                    {% for attachment in comment.attachments.all %}
+                        <span>{{ attachment.filename }}</span>{% if not forloop.last %}, {% endif %}
+                    {% endfor %}
+                </div>
+            {% endif %}
+        </div>
+    {% endfor %}
     {% endif %}
 
 </body>
