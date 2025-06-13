@@ -187,7 +187,7 @@ def orcamento_pdf_view(request, pk):
     except InformacoesOrcamento.DoesNotExist:
         informacoes = None
 
-    context = { 'orcamento': orcamento, 'informacoes': informacoes, 'company_name': 'Nome da Sua Empresa Aqui', 'for_client': True }
+    context = { 'orcamento': orcamento, 'informacoes': informacoes, 'company_name': 'mod64bits', 'for_client': True }
     pdf = render_to_pdf('quotes/pdf/orcamento_pdf_template.html', context)
     if pdf:
         response = HttpResponse(pdf, content_type='application/pdf')
