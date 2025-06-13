@@ -10,6 +10,14 @@
     <div class="card-header">
         <h3 class="card-title">Orçamento #{{ orcamento.id }} - {{ orcamento.cliente.nome }}</h3>
         <div class="card-tools">
+            {% if orcamento.status == 'APROVADO' %}
+            <form action="{% url 'quotes:generate_os_from_quote' orcamento.pk %}" method="post" style="display: inline;">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-sm btn-success" title="Gerar OS a partir deste Orçamento">
+                    <i class="fas fa-cogs"></i> Gerar OS
+                </button>
+            </form>
+            {% endif %}
             <a href="{% url 'quotes:orcamento_pdf' orcamento.pk %}" target="_blank" class="btn btn-sm btn-secondary" title="Gerar PDF Cliente"><i class="fas fa-file-pdf"></i> PDF Cliente</a>
             {% if orcamento.status not in "APROVADO,CONCLUIDO,CANCELADO,REPROVADO" %}
             <a href="{% url 'quotes:orcamento_update' orcamento.pk %}" class="btn btn-sm btn-warning" title="Editar Orçamento"><i class="fas fa-edit"></i> Editar</a>

@@ -1,11 +1,13 @@
 {% extends "base/base.html" %}
 {% load static %}
-{% load i18n %} {% block title %}Lista de Produtos{% endblock %}
+{% load i18n %}
+
+{% block title %}Lista de Produtos{% endblock %}
 
 {% block page_title %}
     Lista de Produtos
-    <button type="button" class="btn btn-primary btn-sm float-right" 
-            data-toggle="ajax-modal" 
+    <button type="button" class="btn btn-primary btn-sm float-right"
+            data-toggle="ajax-modal"
             data-target="#ajaxModal"
             data-url="{% url 'inventory:produto_create_modal' %}">
         <i class="fas fa-plus"></i> Novo Produto
@@ -19,11 +21,11 @@
         <table class="table table-hover text-nowrap">
             <thead>
                 <tr>
-                    <th>Nome</th>
-                    <th>Fabricante</th>
+                    <th>Nome do Produto</th>
+                    <th>Categoria</th>
                     <th>Fornecedor</th>
                     <th>Preço Compra</th>
-                    <th>Preço Venda (Sug.)</th>
+                    <th>Stock</th>
                     <th>Ativo</th>
                     <th>Ações</th>
                 </tr>
@@ -36,16 +38,26 @@
                             {{ produto.nome|truncatechars:40 }}
                         </a>
                     </td>
-                    <td>{{ produto.fabricante|default:"-" }}</td>
+                    <td>
+                        {% if produto.categoria %}
+                        <a href="#" data-toggle="ajax-modal" data-target="#ajaxModal" data-url="{% url 'inventory:categoriaproduto_detail_modal' produto.categoria.pk %}">
+                           {{ produto.categoria.nome }}
+                        </a>
+                        {% else %}
+                        <span class="text-muted">-</span>
+                        {% endif %}
+                    </td>
                     <td>
                         {% if produto.fornecedor %}
                         <a href="#" data-toggle="ajax-modal" data-target="#ajaxModal" data-url="{% url 'inventory:fornecedor_detail_modal' produto.fornecedor.pk %}">
                             {{ produto.fornecedor.nome|truncatechars:30 }}
                         </a>
-                        {% else %}-{% endif %}
+                        {% else %}
+                        <span class="text-muted">-</span>
+                        {% endif %}
                     </td>
                     <td>R$ {{ produto.preco_compra|floatformat:2 }}</td>
-                    <td>R$ {{ produto.preco_venda_sugerido|floatformat:2|default:"-" }}</td>
+                    <td>{{ produto.quantidade_em_estoque|floatformat:2 }}</td>
                     <td>
                         {% if produto.ativo %}
                             <span class="badge badge-success">Sim</span>
