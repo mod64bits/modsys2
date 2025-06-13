@@ -14,4 +14,5 @@ urlpatterns = [
 
     # URL para AJAX de detalhes do produto (usado no formulário de orçamento)
     path('ajax/get-product-details/<int:product_id>/', views.get_product_details_json, name='ajax_get_product_details'),
+    path('<int:pk>/generate-os/', views.generate_os_from_quote, name='generate_os_from_quote'),
 ]

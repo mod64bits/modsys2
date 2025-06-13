@@ -6,8 +6,8 @@ from django.utils.translation import gettext_lazy as _
 
 class Fornecedor(models.Model):
     nome = models.CharField(max_length=255, verbose_name="Nome do Fornecedor")
-    documento = models.CharField(max_length=20, blank=True, null=True, verbose_name="Documento (CNPJ/CPF)") # Máscara no frontend
-    telefone = models.CharField(max_length=20, blank=True, null=True, verbose_name="Telefone") # Máscara no frontend
+    documento = models.CharField(max_length=20, blank=True, null=True, verbose_name="Documento (CNPJ/CPF)")
+    telefone = models.CharField(max_length=20, blank=True, null=True, verbose_name="Telefone")
     email = models.EmailField(max_length=255, blank=True, null=True, verbose_name="E-mail de Contato")
 
     endereco_logradouro = models.CharField(max_length=255, blank=True, null=True, verbose_name="Logradouro")
@@ -68,6 +68,12 @@ class Produto(models.Model):
         default=Decimal('0.00'),
         blank=True, null=True,
         verbose_name="Preço de Venda Sugerido"
+    )
+
+    # Novo campo para controlo de stock
+    quantidade_em_estoque = models.DecimalField(
+        max_digits=10, decimal_places=2, default=Decimal('0.00'),
+        verbose_name=_("Quantidade em Stock")
     )
 
     categoria = models.ForeignKey(

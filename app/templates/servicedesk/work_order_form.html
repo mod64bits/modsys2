@@ -1,0 +1,107 @@
+{% extends "base/base.html" %}
+{% load static %}
+
+{% block title %}{{ page_title }}{% endblock %}
+{% block page_title %}{{ page_title }}{% endblock %}
+
+{% block extrastyles %}
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<link href="https://cdnjs.cloudflare.com/ajax/libs/select2-bootstrap4-theme/1.5.2/select2-bootstrap4.min.css" rel="stylesheet">
+<style>
+    .formset-row { padding: 15px; border-bottom: 1px solid #eee; }
+    .select2-container--bootstrap4 .select2-selection--single { height: calc(2.25rem + 2px) !important; }
+</style>
+{% endblock %}
+
+{% block content %}
+<form method="post">
+    {% csrf_token %}
+    <div class="card card-primary card-outline">
+        <div class="card-body">
+            {% if form.non_field_errors %}<div class="alert alert-danger">{{ form.non_field_errors }}</div>{% endif %}
+            {{ form.as_p }}
+        </div>
+    </div>
+
+    <div class="card card-info card-outline mt-3">
+        <div class="card-header"><h3 class="card-title">Produtos Utilizados</h3></div>
+        <div class="card-body formset-container" id="{{ product_formset.prefix }}-formset-container">
+            {{ product_formset.management_form }}
+            {% for form_item in product_formset %}
+            <div class="formset-row" id="{{ product_formset.prefix }}-{% if form_item.instance.pk %}{{ form_item.instance.pk }}{% else %}{{ forloop.counter0 }}{% endif %}">
+                {% if form_item.non_field_errors %}<div class="alert alert-danger">{{ form_item.non_field_errors }}</div>{% endif %}
+                {% for hidden in form_item.hidden_fields %}{{ hidden }}{% endfor %}
+                <div class="row align-items-end">
+                    <div class="col-md-5 form-group">{{ form_item.produto_lookup.label_tag }} {{ form_item.produto_lookup }}</div>
+                    <div class="col-md-2 form-group">{{ form_item.quantidade.label_tag }} {{ form_item.quantidade }}</div>
+                    <div class="col-md-2 form-group">{{ form_item.preco_compra_no_momento.label_tag }} {{ form_item.preco_compra_no_momento }}</div>
+                    <div class="col-md-2 form-group">{{ form_item.preco_venda_no_momento.label_tag }} {{ form_item.preco_venda_no_momento }}</div>
+                    <div class="col-md-1 form-group">{% if product_formset.can_delete %}{{ form_item.DELETE }}{% endif %}</div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        <div class="card-footer">
+            <button type="button" class="btn btn-sm btn-success add-formset-row" data-prefix="{{ product_formset.prefix }}">Adicionar Produto</button>
+        </div>
+    </div>
+    
+    <script type="text/template" id="{{ product_formset.prefix }}-empty-form-template">
+        {% spaceless %}
+        <div class="formset-row" id="{{ product_formset.prefix }}-__prefix__">
+            {% for hidden in product_formset.empty_form.hidden_fields %}{{ hidden }}{% endfor %}
+            <div class="row align-items-end">
+                <div class="col-md-5 form-group">{{ product_formset.empty_form.produto_lookup.label_tag }} {{ product_formset.empty_form.produto_lookup }}</div>
+                <div class="col-md-2 form-group">{{ product_formset.empty_form.quantidade.label_tag }} {{ product_formset.empty_form.quantidade }}</div>
+                <div class="col-md-2 form-group">{{ product_formset.empty_form.preco_compra_no_momento.label_tag }} {{ product_formset.empty_form.preco_compra_no_momento }}</div>
+                <div class="col-md-2 form-group">{{ product_formset.empty_form.preco_venda_no_momento.label_tag }} {{ product_formset.empty_form.preco_venda_no_momento }}</div>
+                <div class="col-md-1 form-group">{% if product_formset.can_delete %}{{ product_formset.empty_form.DELETE }}{% endif %}</div>
+            </div>
+        </div>
+        {% endspaceless %}
+    </script>
+
+    <div class="mt-3">
+        <button type="submit" class="btn btn-success">Guardar Alterações na OS</button>
+        <a href="{% url 'servicedesk:work_order_list' %}" class="btn btn-secondary">Cancelar</a>
+    </div>
+</form>
+{% endblock %}
+
+{% block extrajs %}
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<script>
+$(document).ready(function() {
+    function initializeSelect2(element) { $(element).find('.select2-field').select2({ theme: 'bootstrap4', width: '100%' }); }
+    initializeSelect2(document);
+
+    function addForm(btn) {
+        var prefix = $(btn).data('prefix');
+        var formCount = parseInt($('#id_' + prefix + '-TOTAL_FORMS').val());
+        var template = $('#' + prefix + '-empty-form-template').html().replace(/__prefix__/g, formCount);
+        $('#' + prefix + '-formset-container').append(template);
+        $('#id_' + prefix + '-TOTAL_FORMS').val(formCount + 1);
+        initializeSelect2($('#' + prefix + '-' + formCount));
+    }
+
+    $('.add-formset-row').click(function() { addForm(this); });
+
+    $('.formset-container').on('change', '.product-lookup', function() {
+        var $row = $(this).closest('.formset-row');
+        var productId = $(this).val();
+        if (productId) {
+            $.ajax({
+                url: "{% url 'quotes:ajax_get_product_details' product_id=0 %}".replace('0', productId),
+                success: function(data) {
+                    if (data.success) {
+                        $row.find('input[name$="-produto"]').val(productId);
+                        $row.find('input[name$="-preco_compra_no_momento"]').val(data.preco_compra);
+                        $row.find('input[name$="-preco_venda_no_momento"]').val(data.preco_venda_sugerido || data.preco_compra);
+                    }
+                }
+            });
+        }
+    });
+});
+</script>
+{% endblock %}

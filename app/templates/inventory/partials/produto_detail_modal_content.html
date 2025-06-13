@@ -26,6 +26,7 @@
         <dt class="col-sm-4">Descrição:</dt><dd class="col-sm-8">{{ produto.descricao|linebreaksbr|default:"-" }}</dd>
         <dt class="col-sm-4">Preço de Compra:</dt><dd class="col-sm-8">R$ {{ produto.preco_compra|floatformat:2 }}</dd>
         <dt class="col-sm-4">Preço Venda (Sug.):</dt><dd class="col-sm-8">R$ {{ produto.preco_venda_sugerido|floatformat:2|default:"-" }}</dd>
+        <dt class="col-sm-4">Quantidade em Stock:</dt><dd class="col-sm-8">{{ produto.quantidade_em_estoque|floatformat:2 }}</dd>
         <dt class="col-sm-4">Código de Barras:</dt><dd class="col-sm-8">{{ produto.codigo_barras|default:"-" }}</dd>
         <dt class="col-sm-4">Ativo:</dt><dd class="col-sm-8">{% if produto.ativo %}Sim{% else %}Não{% endif %}</dd>
         <dt class="col-sm-4">Cadastrado em:</dt><dd class="col-sm-8">{{ produto.created_at|date:"d/m/Y H:i" }}</dd>

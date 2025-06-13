@@ -8,76 +8,64 @@
     <div class="modal-body">
         {% if form.non_field_errors %}<div class="alert alert-danger">{{ form.non_field_errors }}</div>{% endif %}
         
-        {% if crispy_forms_tags %}
-            {{ form|crispy }}
-        {% else %}
-            <div class="row">
-                <div class="col-md-8 form-group">{{ form.nome.label_tag }} {{ form.nome }} {% for error in form.nome.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}</div>
-                <div class="col-md-4 form-group">{{ form.fabricante.label_tag }} {{ form.fabricante }} {% for error in form.fabricante.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}</div>
-            </div>
-            <div class="row">
-                <div class="col-md-6 form-group">
-                    {{ form.fornecedor.label_tag }}
-                    <div class="input-group">
-                        {{ form.fornecedor }}
-                        <div class="input-group-append">
-                            <button type="button" class="btn btn-outline-secondary btn-sm quick-create-related"
-                                    data-toggle="ajax-modal"
-                                    data-target="#ajaxModal"
-                                    data-url="{% url 'inventory:fornecedor_create_modal' %}"
-                                    data-update-select="fornecedor"
-                                    title="Novo Fornecedor Rápido">
-                                <i class="fas fa-plus"></i>
-                            </button>
-                        </div>
+        <div class="row">
+            <div class="col-md-8 form-group">{{ form.nome.label_tag }} {{ form.nome }} {% for error in form.nome.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}</div>
+            <div class="col-md-4 form-group">{{ form.fabricante.label_tag }} {{ form.fabricante }} {% for error in form.fabricante.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}</div>
+        </div>
+        <div class="row">
+            <div class="col-md-6 form-group">
+                {{ form.fornecedor.label_tag }}
+                <div class="input-group">
+                    {{ form.fornecedor }}
+                    <div class="input-group-append">
+                        <button type="button" class="btn btn-outline-secondary btn-sm quick-create-related"
+                                data-toggle="ajax-modal"
+                                data-target="#ajaxModal"
+                                data-url="{% url 'inventory:fornecedor_create_modal' %}"
+                                data-update-select="fornecedor"
+                                title="Novo Fornecedor Rápido">
+                            <i class="fas fa-plus"></i>
+                        </button>
                     </div>
-                    {% for error in form.fornecedor.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
                 </div>
-                <div class="col-md-6 form-group">
-                     {{ form.categoria.label_tag }}
-                    <div class="input-group">
-                        {{ form.categoria }}
-                        <div class="input-group-append">
-                            <button type="button" class="btn btn-outline-secondary btn-sm quick-create-related"
-                                    data-toggle="ajax-modal"
-                                    data-target="#ajaxModal"
-                                    data-url="{% url 'inventory:categoriaproduto_create_modal' %}"
-                                    data-update-select="categoria"
-                                    title="Nova Categoria Rápida">
-                                <i class="fas fa-plus"></i>
-                            </button>
-                        </div>
+                {% for error in form.fornecedor.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+            </div>
+            <div class="col-md-6 form-group">
+                 {{ form.categoria.label_tag }}
+                <div class="input-group">
+                    {{ form.categoria }}
+                    <div class="input-group-append">
+                        <button type="button" class="btn btn-outline-secondary btn-sm quick-create-related"
+                                data-toggle="ajax-modal"
+                                data-target="#ajaxModal"
+                                data-url="{% url 'inventory:categoriaproduto_create_modal' %}"
+                                data-update-select="categoria"
+                                title="Nova Categoria Rápida">
+                            <i class="fas fa-plus"></i>
+                        </button>
                     </div>
-                    {% for error in form.categoria.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
                 </div>
+                {% for error in form.categoria.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
             </div>
-            <div class="form-group">{{ form.descricao.label_tag }} {{ form.descricao }} {% for error in form.descricao.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}</div>
-            <div class="row">
-                <div class="col-md-6 form-group">{{ form.preco_compra.label_tag }} {{ form.preco_compra }} {% for error in form.preco_compra.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}</div>
-                <div class="col-md-6 form-group">{{ form.preco_venda_sugerido.label_tag }} {{ form.preco_venda_sugerido }} {% for error in form.preco_venda_sugerido.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}</div>
+        </div>
+        <div class="form-group">{{ form.descricao.label_tag }} {{ form.descricao }} {% for error in form.descricao.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}</div>
+
+        <!-- LINHA CORRIGIDA COM O CAMPO DE STOCK -->
+        <div class="row">
+            <div class="col-md-4 form-group">{{ form.preco_compra.label_tag }} {{ form.preco_compra }} {% for error in form.preco_compra.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}</div>
+            <div class="col-md-4 form-group">{{ form.preco_venda_sugerido.label_tag }} {{ form.preco_venda_sugerido }} {% for error in form.preco_venda_sugerido.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}</div>
+            <div class="col-md-4 form-group">{{ form.quantidade_em_estoque.label_tag }} {{ form.quantidade_em_estoque }} {% for error in form.quantidade_em_estoque.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}</div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-8 form-group">{{ form.codigo_barras.label_tag }} {{ form.codigo_barras }} {% for error in form.codigo_barras.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}</div>
+            <div class="col-md-4 form-group align-self-center">
+                <div class="form-check mt-3">{{ form.ativo }} <label class="form-check-label" for="{{ form.ativo.id_for_label }}">{{ form.ativo.label }}</label></div>
             </div>
-            <div class="row">
-                <div class="col-md-8 form-group">{{ form.codigo_barras.label_tag }} {{ form.codigo_barras }} {% for error in form.codigo_barras.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}</div>
-                <div class="col-md-4 form-group align-self-center">
-                    <div class="form-check mt-3">{{ form.ativo }} <label class="form-check-label" for="{{ form.ativo.id_for_label }}">{{ form.ativo.label }}</label></div>
-                </div>
-            </div>
-        {% endif %}
+        </div>
     </div>
     <div class="modal-footer">
         <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
         <button type="submit" class="btn btn-primary">Salvar Produto</button>
     </div>
 </form>
-<script>
-// $(document).ready(function() {
-//     if ($.fn.select2) {
-//         $('.select2-field').select2({
-//             theme: 'bootstrap4',
-//             dropdownParent: $('#ajaxModal'),
-//             placeholder: "Selecione uma opção",
-//             allowClear: true
-//         });
-//     }
-// });
-</script>

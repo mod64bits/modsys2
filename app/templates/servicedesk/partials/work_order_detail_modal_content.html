@@ -1,5 +1,5 @@
 <div class="modal-header">
-    <h5 class="modal-title">{{ detail_title|default:"Detalhes da Ordem de Serviço" }}</h5>
+    <h5 class="modal-title">{{ detail_title }}</h5>
     <button type="button" class="close" data-dismiss="modal" aria-label="Close">
         <span aria-hidden="true">&times;</span>
     </button>
@@ -11,7 +11,7 @@
 
         <dt class="col-sm-4">Ticket Relacionado:</dt>
         <dd class="col-sm-8">
-            <a href="#" 
+            <a href="#"
                data-toggle="ajax-modal"
                data-target="#ajaxModal"
                data-url="{% url 'servicedesk:ticket_detail_modal' work_order.ticket.pk %}">
@@ -43,6 +43,19 @@
         <dt class="col-sm-4">Última Atualização da OS:</dt>
         <dd class="col-sm-8">{{ work_order.updated_at|date:"d/m/Y H:i:s" }}</dd>
     </dl>
+
+    {% if produtos_utilizados %}
+    <hr>
+    <h6>Produtos Utilizados nesta OS</h6>
+    <ul class="list-group">
+        {% for item in produtos_utilizados %}
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+                {{ item.produto.nome }} ({{ item.quantidade }})
+                <span class="badge badge-primary badge-pill">R$ {{ item.preco_venda_no_momento|floatformat:2 }}</span>
+            </li>
+        {% endfor %}
+    </ul>
+    {% endif %}
 </div>
 <div class="modal-footer">
     <a href="{% url 'servicedesk:work_order_pdf' work_order.pk %}" target="_blank" class="btn btn-info mr-auto">
@@ -50,11 +63,8 @@
     </a>
     <button type="button" class="btn btn-secondary" data-dismiss="modal">Fechar</button>
     {% if work_order.status not in "CONCLUIDA,CANCELADA" %}
-    <button type="button" class="btn btn-warning"
-            data-toggle="ajax-modal"
-            data-target="#ajaxModal"
-            data-url="{% url 'servicedesk:work_order_update_modal' work_order.pk %}">
-        <i class="fas fa-edit"></i> Editar OS
-    </button>
+    <a href="{% url 'servicedesk:work_order_update' work_order.pk %}" class="btn btn-warning">
+        <i class="fas fa-edit"></i> Editar OS e Produtos
+    </a>
     {% endif %}
 </div>

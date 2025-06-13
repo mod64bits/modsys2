@@ -42,6 +42,7 @@ class FornecedorForm(forms.ModelForm):
             return "".join(filter(str.isdigit, cep))
         return cep
 
+
 class CategoriaProdutoForm(forms.ModelForm):
     class Meta:
         model = CategoriaProduto
@@ -57,6 +58,7 @@ class ProdutoForm(forms.ModelForm):
         fields = [
             'nome', 'fabricante', 'fornecedor', 'categoria', 'descricao',
             'preco_compra', 'preco_venda_sugerido',
+            'quantidade_em_estoque',  # Campo de stock adicionado aqui
             'codigo_barras', 'ativo'
         ]
         widgets = {
@@ -67,12 +69,14 @@ class ProdutoForm(forms.ModelForm):
             'descricao': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
             'preco_compra': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
             'preco_venda_sugerido': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
+            'quantidade_em_estoque': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}), # Widget para o stock
             'codigo_barras': forms.TextInput(attrs={'class': 'form-control'}),
             'ativo': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
         }
         labels = {
             'preco_venda_sugerido': 'Preço de Venda (Sug.)',
             'codigo_barras': 'Código de Barras (EAN)',
+            'quantidade_em_estoque': 'Quantidade em Stock', # Label para o campo
         }
 
     def __init__(self, *args, **kwargs):
