@@ -7,11 +7,25 @@ from django.contrib import messages
 from django.utils import timezone
 from django.http import HttpResponse, JsonResponse
 from django.template.loader import render_to_string
-
+from django.template.loader import render_to_string, get_template
+from io import BytesIO
+from xhtml2pdf import pisa
 
 from .models import ContaReceber, Pagamento
 from apps.quotes.models import Orcamento
 from .forms import PagamentoForm, ContaReceberForm
+
+
+# --- Função Auxiliar para PDF ---
+def render_to_pdf(template_src, context_dict={}):
+    template = get_template(template_src)
+    html  = template.render(context_dict)
+    result = BytesIO()
+    pdf = pisa.pisaDocument(BytesIO(html.encode("UTF-8")), result, encoding='UTF-8')
+    if not pdf.err:
+        return HttpResponse(result.getvalue(), content_type='application/pdf')
+    return None
+
 
 @login_required
 def contareceber_list(request):
@@ -84,4 +98,32 @@ def generate_conta_from_orcamento(request, orcamento_pk):
 
     # Se for GET, poderia mostrar uma página de confirmação, mas um POST direto do botão é mais simples.
     return redirect('quotes:orcamento_detail', pk=orcamento.pk)
+
+
+@login_required
+def contareceber_receipt_pdf_view(request, pk):
+    """
+    Gera um PDF de recibo para uma Conta a Receber, mostrando os pagamentos e o saldo.
+    """
+    conta = get_object_or_404(ContaReceber.objects.select_related('cliente'), pk=pk)
+    pagamentos = conta.pagamentos.all().order_by('data_pagamento')
+
+    context = {
+        'conta': conta,
+        'pagamentos': pagamentos,
+        'company_name': 'Nome da Sua Empresa Aqui', # Ajuste conforme necessário
+        'generation_date': timezone.now(),
+    }
+
+    pdf = render_to_pdf('financial/pdf/receipt_pdf_template.html', context)
+
+    if pdf:
+        response = HttpResponse(pdf, content_type='application/pdf')
+        filename = f"Recibo_Fatura_{conta.pk}.pdf"
+        # Usar aspas duplas para o nome do ficheiro
+        content = f"inline; filename={filename}"
+        response['Content-Disposition'] = content
+        return response
+
+    return HttpResponse("Erro ao gerar o recibo em PDF.", status=500)
 
