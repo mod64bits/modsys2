@@ -22,6 +22,9 @@ urlpatterns = [
     path('inventory/', include('apps.inventory.urls', namespace='inventory')),
     path('quotes/', include('apps.quotes.urls', namespace='quotes')),
 
+    # Financial
+    path('financial/', include('apps.financial.urls', namespace='financial')),
+
     # URLs de Autenticação
     path('login/', auth_views.LoginView.as_view(template_name='registration/login.html'), name='login'),
     path('logout/', auth_views.LogoutView.as_view(), name='logout'),

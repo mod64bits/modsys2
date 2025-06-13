@@ -1,0 +1,46 @@
+{% extends "base/base.html" %}
+{% load i18n %}
+
+{% block title %}{{ page_title }}{% endblock %}
+{% block page_title %}{{ page_title }}{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-body table-responsive p-0">
+        <table class="table table-hover">
+            <thead>
+                <tr>
+                    <th>Fatura #</th>
+                    <th>Cliente</th>
+                    <th>Descrição</th>
+                    <th>Vencimento</th>
+                    <th>Valor Total</th>
+                    <th>Valor Pago</th>
+                    <th>Saldo</th>
+                    <th>Status</th>
+                    <th>Ações</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for conta in contas %}
+                <tr>
+                    <td>{{ conta.id }}</td>
+                    <td>{{ conta.cliente.nome }}</td>
+                    <td><a href="{% url 'financial:contareceber_detail' conta.pk %}">{{ conta.descricao|truncatechars:40 }}</a></td>
+                    <td>{{ conta.data_vencimento|date:"d/m/Y" }}</td>
+                    <td>R$ {{ conta.valor_total|floatformat:2 }}</td>
+                    <td>R$ {{ conta.valor_pago|floatformat:2 }}</td>
+                    <td>R$ {{ conta.saldo_devedor|floatformat:2 }}</td>
+                    <td><span class="badge badge-{% if conta.status == 'PAGO' %}success{% elif conta.status == 'VENCIDO' %}danger{% elif conta.status == 'PAGO_PARCIALMENTE' %}info{% else %}secondary{% endif %}">{{ conta.get_status_display }}</span></td>
+                    <td>
+                        <a href="{% url 'financial:contareceber_detail' conta.pk %}" class="btn btn-xs btn-info" title="Ver Detalhes e Pagamentos"><i class="fas fa-eye"></i></a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="9" class="text-center p-3">Nenhuma conta a receber encontrada.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

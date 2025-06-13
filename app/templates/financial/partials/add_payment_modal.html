@@ -1,0 +1,38 @@
+<div class="modal-header">
+    <h5 class="modal-title">{{ form_title }}</h5>
+    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+        <span aria-hidden="true">&times;</span>
+    </button>
+</div>
+<form method="post" action="{{ form_action_url }}" class="ajax-form">
+    {% csrf_token %}
+    <div class="modal-body">
+        <p>Saldo Devedor Atual: <strong class="text-danger">R$ {{ conta.saldo_devedor|floatformat:2 }}</strong></p>
+        {% if form.non_field_errors %}<div class="alert alert-danger">{{ form.non_field_errors }}</div>{% endif %}
+        
+        <div class="form-group">
+            {{ form.valor_pago.label_tag }}
+            {{ form.valor_pago }}
+            {% for error in form.valor_pago.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+        </div>
+        <div class="form-group">
+            {{ form.data_pagamento.label_tag }}
+            {{ form.data_pagamento }}
+            {% for error in form.data_pagamento.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+        </div>
+        <div class="form-group">
+            {{ form.metodo.label_tag }}
+            {{ form.metodo }}
+            {% for error in form.metodo.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+        </div>
+        <div class="form-group">
+            {{ form.observacoes.label_tag }}
+            {{ form.observacoes }}
+            {% for error in form.observacoes.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+        </div>
+    </div>
+    <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+        <button type="submit" class="btn btn-primary">Registar Pagamento</button>
+    </div>
+</form>

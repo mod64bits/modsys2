@@ -4,7 +4,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>{% block title %}Mod Desk App{% endblock %} | mod64bits</title>
+  <title>{% block title %}mod Desk App{% endblock %} | mod64bits</title>
 
   <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700&display=fallback">
   <link rel="stylesheet" href="{% static 'adminlte/plugins/fontawesome-free/css/all.min.css' %}">
@@ -33,7 +33,7 @@
     .select2-container--open {
         z-index: 10055 !important;
     }
-    /* CORREÇÃO: Regra CSS mais específica para garantir a visibilidade do texto dos anexos */
+    /* CORREÇÃO: Estilo para os links de anexo na timeline */
     .timeline .timeline-item .timeline-footer a.btn-outline-secondary {
         color: #007bff; /* Usar cor de link primária para garantir visibilidade */
         border-color: #007bff;
@@ -90,7 +90,7 @@
   <aside class="main-sidebar sidebar-dark-primary elevation-4">
     <a href="{% if user.is_authenticated %}{% url 'dashboard:dashboard_page' %}{% else %}{% url 'login' %}{% endif %}" class="brand-link">
       <img src="{% static 'adminlte/dist/img/AdminLTELogo.png' %}" alt="AdminLTE Logo" class="brand-image img-circle elevation-3" style="opacity: .8">
-      <span class="brand-text font-weight-light">Mod Desk</span>
+      <span class="brand-text font-weight-light">Service Desk</span>
     </a>
 
     <div class="sidebar">
@@ -124,6 +124,12 @@
             <a href="{% url 'quotes:orcamento_list' %}" class="nav-link {% if request.resolver_match.app_name == 'quotes' %}active{% endif %}">
               <i class="nav-icon fas fa-file-invoice-dollar"></i>
               <p>Orçamentos</p>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a href="{% url 'financial:contareceber_list' %}" class="nav-link {% if request.resolver_match.app_name == 'financial' %}active{% endif %}">
+              <i class="nav-icon fas fa-dollar-sign"></i>
+              <p>Financeiro</p>
             </a>
           </li>
           <li class="nav-item">
@@ -220,7 +226,7 @@
     <div class="float-right d-none d-sm-inline">
       Anything you want
     </div>
-    <strong>Copyright &copy; {% now "Y" %} <a href="#">mod64bits</a>.</strong> All rights reserved.
+    <strong>Copyright &copy; {% now "Y" %} <a href="#">Sua Empresa</a>.</strong> All rights reserved.
   </footer>
 </div>
 <div class="modal fade" id="ajaxModal" tabindex="-1" role="dialog" aria-labelledby="ajaxModalLabel" aria-hidden="true">
