@@ -4,7 +4,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>{% block title %}mod Desk App{% endblock %} | mod64bits</title>
+  <title>{% block title %}Service Desk App{% endblock %} | AdminLTE 3</title>
 
   <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700&display=fallback">
   <link rel="stylesheet" href="{% static 'adminlte/plugins/fontawesome-free/css/all.min.css' %}">
@@ -33,9 +33,8 @@
     .select2-container--open {
         z-index: 10055 !important;
     }
-    /* CORREÇÃO: Estilo para os links de anexo na timeline */
     .timeline .timeline-item .timeline-footer a.btn-outline-secondary {
-        color: #007bff; /* Usar cor de link primária para garantir visibilidade */
+        color: #007bff;
         border-color: #007bff;
     }
     .timeline .timeline-item .timeline-footer a.btn-outline-secondary:hover {
@@ -108,11 +107,28 @@
       <nav class="mt-2">
         <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu" data-accordion="false">
           {% if user.is_authenticated %}
-          <li class="nav-item">
-            <a href="{% url 'dashboard:dashboard_page' %}" class="nav-link {% if request.resolver_match.app_name == 'dashboard' %}active{% endif %}">
+          <li class="nav-item {% if request.resolver_match.app_name == 'dashboard' %}menu-open{% endif %}">
+            <a href="#" class="nav-link {% if request.resolver_match.app_name == 'dashboard' %}active{% endif %}">
               <i class="nav-icon fas fa-tachometer-alt"></i>
-              <p>Dashboard</p>
+              <p>
+                Dashboards
+                <i class="right fas fa-angle-left"></i>
+              </p>
             </a>
+            <ul class="nav nav-treeview">
+              <li class="nav-item">
+                <a href="{% url 'dashboard:dashboard_page' %}" class="nav-link {% if request.resolver_match.url_name == 'dashboard_page' %}active{% endif %}">
+                  <i class="far fa-circle nav-icon"></i>
+                  <p>Geral</p>
+                </a>
+              </li>
+              <li class="nav-item">
+                <a href="{% url 'dashboard:financial_dashboard_page' %}" class="nav-link {% if request.resolver_match.url_name == 'financial_dashboard_page' %}active{% endif %}">
+                  <i class="far fa-circle nav-icon"></i>
+                  <p>Financeiro</p>
+                </a>
+              </li>
+            </ul>
           </li>
           <li class="nav-item">
             <a href="{% url 'customers:customer_list' %}" class="nav-link {% if request.resolver_match.app_name == 'customers' %}active{% endif %}">
@@ -226,7 +242,7 @@
     <div class="float-right d-none d-sm-inline">
       Anything you want
     </div>
-    <strong>Copyright &copy; {% now "Y" %} <a href="#">Sua Empresa</a>.</strong> All rights reserved.
+    <strong>Copyright &copy; {% now "Y" %} <a href="#">mod64bits</a>.</strong> All rights reserved.
   </footer>
 </div>
 <div class="modal fade" id="ajaxModal" tabindex="-1" role="dialog" aria-labelledby="ajaxModalLabel" aria-hidden="true">

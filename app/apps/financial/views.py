@@ -111,7 +111,7 @@ def contareceber_receipt_pdf_view(request, pk):
     context = {
         'conta': conta,
         'pagamentos': pagamentos,
-        'company_name': 'Nome da Sua Empresa Aqui', # Ajuste conforme necessário
+        'company_name': 'mod64bits', # Ajuste conforme necessário
         'generation_date': timezone.now(),
     }
 

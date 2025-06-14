@@ -1,0 +1,192 @@
+{% extends "base/base.html" %}
+{% load static %}
+{% load i18n %}
+
+{% block title %}{{ page_title }}{% endblock %}
+{% block page_title %}{{ page_title }}{% endblock %}
+
+{% block content %}
+<!-- Info Boxes -->
+<div class="row">
+    <div class="col-md-4">
+        <div class="info-box bg-success">
+            <span class="info-box-icon"><i class="fas fa-check-circle"></i></span>
+            <div class="info-box-content">
+                <span class="info-box-text">Total Recebido (Geral)</span>
+                <span class="info-box-number">R$ {{ total_recebido|floatformat:2 }}</span>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="info-box bg-warning">
+            <span class="info-box-icon"><i class="fas fa-hand-holding-usd"></i></span>
+            <div class="info-box-content">
+                <span class="info-box-text">Saldo a Receber (Abertas)</span>
+                <span class="info-box-number">R$ {{ total_a_receber|floatformat:2 }}</span>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="info-box bg-danger">
+            <span class="info-box-icon"><i class="fas fa-exclamation-triangle"></i></span>
+            <div class="info-box-content">
+                <span class="info-box-text">Total Vencido</span>
+                <span class="info-box-number">R$ {{ total_vencido|floatformat:2 }}</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Gráfico de Faturamento vs Recebido -->
+<div class="row">
+    <div class="col-12">
+        <div class="card card-outline card-primary">
+            <div class="card-header">
+                <h3 class="card-title">Faturamento vs. Recebimentos (Últimos 6 Meses)</h3>
+            </div>
+            <div class="card-body">
+                <div class="chart">
+                    <canvas id="financialChart" style="min-height: 250px; height: 250px; max-height: 250px; max-width: 100%;"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Tabela de Contas a Receber -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header"><h3 class="card-title">Situação das Contas a Receber</h3></div>
+            <div class="card-body table-responsive p-0">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Fatura #</th>
+                            <th>Cliente</th>
+                            <th>Vencimento</th>
+                            <th>Valor Total</th>
+                            <th>Saldo Devedor</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for conta in contas_a_receber %}
+                            <tr class="
+                                {% if conta.status == 'PAGO' %}table-success
+                                {% elif conta.status == 'VENCIDO' %}table-danger
+                                {% elif conta.status == 'PENDENTE' %}table-warning
+                                {% endif %}
+                            ">
+                                <td><a href="{% url 'financial:contareceber_detail' conta.pk %}">#{{ conta.id }}</a></td>
+                                <td>{{ conta.cliente.nome }}</td>
+                                <td>{{ conta.data_vencimento|date:"d/m/Y" }}</td>
+                                <td>R$ {{ conta.valor_total|floatformat:2 }}</td>
+                                <td>R$ {{ conta.saldo_devedor|floatformat:2 }}</td>
+                                <td>{{ conta.get_status_display }}</td>
+                            </tr>
+                        {% empty %}
+                            <tr><td colspan="6" class="text-center p-3">Nenhuma conta a receber para exibir.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extrajs %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+$(function () {
+    'use strict'
+
+    function formatCurrency(value) {
+        return 'R$ ' + value.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+
+    // --- Gráfico Financeiro ---
+    var financialChartCanvas = $('#financialChart').get(0).getContext('2d');
+    var financialChart;
+
+    function updateFinancialChart(labels, faturamentoData, recebimentosData) {
+        if(financialChart) {
+            financialChart.destroy();
+        }
+
+        var chartData = {
+            labels: labels,
+            datasets: [
+                {
+                    label: 'Faturamento',
+                    backgroundColor: 'rgba(60,141,188,0.9)',
+                    borderColor: 'rgba(60,141,188,0.8)',
+                    data: faturamentoData
+                },
+                {
+                    label: 'Recebido',
+                    backgroundColor: 'rgba(40, 167, 69, 0.9)',
+                    borderColor: 'rgba(40, 167, 69, 0.8)',
+                    data: recebimentosData
+                }
+            ]
+        };
+
+        var chartOptions = {
+            responsive: true,
+            maintainAspectRatio: false,
+            datasetFill: false,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        callback: function(value, index, values) {
+                            return formatCurrency(value);
+                        }
+                    }
+                }
+            },
+            plugins: {
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            let label = context.dataset.label || '';
+                            if (label) {
+                                label += ': ';
+                            }
+                            if (context.parsed.y !== null) {
+                                label += formatCurrency(context.parsed.y);
+                            }
+                            return label;
+                        }
+                    }
+                }
+            }
+        };
+
+        financialChart = new Chart(financialChartCanvas, {
+            type: 'bar',
+            data: chartData,
+            options: chartOptions
+        });
+    }
+
+    function loadFinancialChartData() {
+        $.ajax({
+            url: "{% url 'dashboard:data_api' %}?data_type=financial_chart",
+            type: 'GET',
+            success: function(data) {
+                updateFinancialChart(data.labels, data.faturamento, data.recebimentos);
+            },
+            error: function() {
+                console.error("Erro ao carregar dados do gráfico financeiro.");
+            }
+        });
+    }
+
+    loadFinancialChartData();
+});
+</script>
+{% endblock %}
