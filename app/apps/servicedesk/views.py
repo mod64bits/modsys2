@@ -121,7 +121,7 @@ def ticket_pdf_view(request, pk):
     ticket = get_object_or_404(Ticket, pk=pk)
     work_orders = ticket.work_orders.all().order_by('created_at')
     public_comments = ticket.comments.filter(is_internal_note=False, comment_type=TicketComment.CommentType.COMMENT).select_related('author').prefetch_related('attachments').order_by('created_at')
-    context = {'ticket': ticket, 'work_orders': work_orders, 'public_comments': public_comments, 'company_name': 'Sua Empresa'}
+    context = {'ticket': ticket, 'work_orders': work_orders, 'public_comments': public_comments, 'company_name': 'mod64bits'}
     pdf = render_to_pdf('servicedesk/pdf/ticket_pdf_template.html', context)
     if pdf:
         response = HttpResponse(pdf, content_type='application/pdf')
@@ -236,7 +236,7 @@ def work_order_delete_modal(request, pk):
 @login_required
 def work_order_pdf_view(request, pk):
     work_order = get_object_or_404(WorkOrder.objects.select_related('ticket__customer'), pk=pk)
-    context = {'work_order': work_order, 'company_name': 'Sua Empresa'}
+    context = {'work_order': work_order, 'company_name': 'mod64bits'}
     pdf = render_to_pdf('servicedesk/pdf/work_order_pdf_template.html', context)
     if pdf:
         response = HttpResponse(pdf, content_type='application/pdf')

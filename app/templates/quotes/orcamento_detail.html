@@ -11,17 +11,34 @@
         <h3 class="card-title">Orçamento #{{ orcamento.id }} - {{ orcamento.cliente.nome }}</h3>
         <div class="card-tools">
             {% if orcamento.status == 'APROVADO' %}
-            <form action="{% url 'quotes:generate_os_from_quote' orcamento.pk %}" method="post" style="display: inline;">
-                {% csrf_token %}
-                <button type="submit" class="btn btn-sm btn-success" title="Gerar OS a partir deste Orçamento">
-                    <i class="fas fa-cogs"></i> Gerar OS
-                </button>
-            </form>
+                {# Lógica para Gerar Fatura/OS #}
+                {% if not orcamento.conta_a_receber %}
+                <form action="{% url 'financial:generate_conta_from_orcamento' orcamento.pk %}" method="post" style="display: inline;">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-sm btn-success" title="Gerar Fatura para este Orçamento">
+                        <i class="fas fa-dollar-sign"></i> Gerar Fatura
+                    </button>
+                </form>
+                {% else %}
+                <a href="{% url 'financial:contareceber_detail' orcamento.conta_a_receber.pk %}" class="btn btn-sm btn-outline-success">
+                    <i class="fas fa-eye"></i> Ver Fatura #{{ orcamento.conta_a_receber.pk }}
+                </a>
+                {% endif %}
+
+                <form action="{% url 'quotes:generate_os_from_quote' orcamento.pk %}" method="post" style="display: inline;">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-sm btn-primary" title="Gerar OS a partir deste Orçamento">
+                        <i class="fas fa-cogs"></i> Gerar OS
+                    </button>
+                </form>
             {% endif %}
+
             <a href="{% url 'quotes:orcamento_pdf' orcamento.pk %}" target="_blank" class="btn btn-sm btn-secondary" title="Gerar PDF Cliente"><i class="fas fa-file-pdf"></i> PDF Cliente</a>
+
             {% if orcamento.status not in "APROVADO,CONCLUIDO,CANCELADO,REPROVADO" %}
             <a href="{% url 'quotes:orcamento_update' orcamento.pk %}" class="btn btn-sm btn-warning" title="Editar Orçamento"><i class="fas fa-edit"></i> Editar</a>
             {% endif %}
+
             {% if orcamento.status not in "APROVADO,CONCLUIDO" %}
             <a href="{% url 'quotes:orcamento_delete' orcamento.pk %}" class="btn btn-sm btn-danger" title="Excluir Orçamento"><i class="fas fa-trash"></i> Excluir</a>
             {% endif %}

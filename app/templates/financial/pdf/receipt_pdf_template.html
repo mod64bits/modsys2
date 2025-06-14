@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Recibo - Fatura #{{ conta.id }}</title>
+    <style>
+        @page {
+            size: a4 portrait;
+            margin: 2cm;
+        }
+        body { font-family: "Helvetica", "Arial", sans-serif; font-size: 11pt; color: #333; }
+        h1 { text-align: center; font-size: 20pt; color: #2c3e50; margin-bottom: 5mm; }
+        h2 { font-size: 14pt; margin-top: 10mm; margin-bottom: 5mm; color: #3498db; border-bottom: 1px solid #bdc3c7; padding-bottom: 2mm;}
+        p { line-height: 1.6; }
+        table { width: 100%; border-collapse: collapse; margin-top: 8mm; font-size: 10pt; }
+        th, td { border-bottom: 1px solid #ddd; padding: 3mm 2mm; text-align: left; }
+        th { background-color: #f8f8f8; font-weight: bold; }
+        .total-row td { border-top: 2px solid #333; font-weight: bold; }
+        .text-right { text-align: right; }
+        .receipt-header { margin-bottom: 10mm; }
+        .company-info { text-align: left; font-size: 9pt; color: #555; }
+        .receipt-info { text-align: right; font-size: 9pt; }
+        .customer-info { margin-top: 10mm; padding: 5mm; border: 1px solid #eee; background-color: #f9f9f9; }
+        .signature-area { margin-top: 25mm; text-align: center; font-size: 10pt; }
+        .signature-line { display: block; width: 70%; border-bottom: 1px solid #333; margin: 20mm auto 2mm auto; }
+    </style>
+</head>
+<body>
+    <div class="receipt-header">
+        <table style="border: none; margin: 0;">
+            <tr>
+                <td style="border: none;" class="company-info">
+                    <strong>{{ company_name|default:"mod64bits" }}</strong><br>
+                    Rua Exemplo, 123 - Bairro Exemplo<br>
+                    Cidade/UF - CEP: 00000-000<br>
+                    Telefone: (00) 0000-0000
+                </td>
+                <td style="border: none;" class="receipt-info">
+                    <strong>Recibo Nº: {{ conta.id }}</strong><br>
+                    Data de Emissão: {{ generation_date|date:"d/m/Y" }}
+                </td>
+            </tr>
+        </table>
+    </div>
+
+    <h1>Recibo de Pagamento</h1>
+
+    <div class="customer-info">
+        <p>Recebemos de <strong>{{ conta.cliente.nome }}</strong>, CPF/CNPJ: {{ conta.cliente.documento|default:"Não informado" }}, a quantia detalhada abaixo, referente à Fatura Nº {{ conta.id }}.</p>
+    </div>
+
+    <h2>Detalhes da Fatura</h2>
+    <p><strong>Descrição:</strong> {{ conta.descricao }}</p>
+    <p><strong>Valor Total da Fatura:</strong> R$ {{ conta.valor_total|floatformat:2 }}</p>
+
+    <h2>Pagamentos Registados</h2>
+    {% if pagamentos %}
+    <table>
+        <thead>
+            <tr>
+                <th>Data do Pagamento</th>
+                <th>Método</th>
+                <th class="text-right">Valor Pago (R$)</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for pagamento in pagamentos %}
+            <tr>
+                <td>{{ pagamento.data_pagamento|date:"d/m/Y" }}</td>
+                <td>{{ pagamento.get_metodo_display }}</td>
+                <td class="text-right">{{ pagamento.valor_pago|floatformat:2 }}</td>
+            </tr>
+            {% endfor %}
+            <tr class="total-row">
+                <td colspan="2"><strong>Total Pago</strong></td>
+                <td class="text-right"><strong>R$ {{ conta.valor_pago|floatformat:2 }}</strong></td>
+            </tr>
+        </tbody>
+    </table>
+    {% else %}
+    <p>Nenhum pagamento registado para esta fatura até ao momento.</p>
+    {% endif %}
+
+    <h2>Resumo</h2>
+    <table>
+        <tr>
+            <th width="70%">Valor Total da Fatura</th>
+            <td class="text-right">R$ {{ conta.valor_total|floatformat:2 }}</td>
+        </tr>
+        <tr>
+            <th>Total Pago</th>
+            <td class="text-right">R$ {{ conta.valor_pago|floatformat:2 }}</td>
+        </tr>
+        <tr class="total-row">
+            <th>Saldo Devedor</th>
+            <td class="text-right">R$ {{ conta.saldo_devedor|floatformat:2 }}</td>
+        </tr>
+    </table>
+
+    <div class="signature-area">
+        <span class="signature-line"></span>
+        <span>{{ company_name|default:"mod64bits" }}</span>
+    </div>
+
+</body>
+</html>
