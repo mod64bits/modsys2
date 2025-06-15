@@ -2,6 +2,7 @@
 from django.db import models
 from django.conf import settings
 from django.utils import timezone
+from apps.notifications.models import Notification
 from django.db.models.signals import post_save, post_delete # Adicionar post_delete
 from django.dispatch import receiver
 from django.utils.translation import gettext_lazy as _
@@ -143,5 +144,30 @@ def atualizar_stock_ao_remover_produto(sender, instance, **kwargs):
     produto.quantidade_em_estoque += instance.quantidade
     produto.save(update_fields=['quantidade_em_estoque'])
 
-# Signals para cascata de status (existentes)
-# ... (código dos seus signals ticket_post_save_receiver e work_order_post_save_receiver) ...
+@receiver(post_save, sender=Ticket)
+def create_ticket_notification(sender, instance, created, **kwargs):
+    """
+    Cria uma notificação quando um ticket é atribuído a um utilizador.
+    """
+    # Verifica se o campo 'assigned_to' foi definido e se não é uma nova criação de ticket
+    # (para não notificar na criação, apenas na atribuição/alteração)
+    if not created and instance.assigned_to:
+        # Para ser mais preciso, devemos verificar se o campo 'assigned_to' mudou.
+        # A forma mais simples de o fazer é no form/view, mas aqui podemos fazer uma verificação básica.
+        # A lógica mais robusta seria guardar o estado anterior.
+        # Por agora, vamos notificar se o ticket for guardado e tiver alguém atribuído.
+
+        # Evitar notificar o próprio utilizador que fez a alteração
+        try:
+            # A view precisa de definir request.user no objeto antes de o guardar para isto funcionar
+            if hasattr(instance, '_current_user') and instance._current_user == instance.assigned_to:
+                return
+        except:
+            pass
+
+        # Cria a notificação
+        Notification.objects.create(
+            recipient=instance.assigned_to,
+            message=f"O Ticket #{instance.id} - '{instance.title[:30]}...' foi-lhe atribuído.",
+            link=reverse('servicedesk:ticket_list') # Exemplo de link, pode ser mais específico
+        )

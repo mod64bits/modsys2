@@ -60,6 +60,7 @@ INSTALLED_APPS = [
     'apps.quotes',
     'apps.financial',
     'apps.dashboard',
+    'apps.notifications',
 ]
 
 MIDDLEWARE = [
