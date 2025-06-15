@@ -2,6 +2,8 @@
 from django.db import models
 from django.core.validators import MinValueValidator
 from decimal import Decimal
+
+from django.urls import reverse
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 from django.db.models.signals import post_save, post_delete
@@ -10,6 +12,8 @@ from django.dispatch import receiver
 from apps.customers.models import Customer
 from apps.inventory.models import Produto
 from django.conf import settings
+
+from apps.notifications.models import Notification
 
 
 class Orcamento(models.Model):
@@ -298,3 +302,18 @@ def atualizar_totais_orcamento_signal(sender, instance, **kwargs):
     if orcamento_afetado:
         orcamento_afetado.recalcular_totais()
 
+
+@receiver(post_save, sender=Orcamento)
+def create_quote_notification(sender, instance, created, **kwargs):
+    """
+    Cria uma notificação quando um orçamento é aprovado.
+    """
+    # Apenas notifica se não for uma nova criação e se o status for APROVADO
+    if not created and instance.status == 'APROVADO':
+        # Notifica o utilizador que criou o orçamento
+        if instance.created_by:
+            Notification.objects.create(
+                recipient=instance.created_by,
+                message=f"O Orçamento #{instance.id} para {instance.cliente.nome} foi APROVADO!",
+                link=reverse('quotes:orcamento_detail', kwargs={'pk': instance.pk})
+            )

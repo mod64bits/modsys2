@@ -1,4 +1,6 @@
 {% load static %}
+{% load notification_tags %} {# Carregar o novo templatetag #}
+
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
@@ -58,6 +60,11 @@
       </ul>
 
     <ul class="navbar-nav ml-auto">
+      <!-- Dropdown de Notificações -->
+      {% if user.is_authenticated %}
+        {% notification_dropdown %}
+      {% endif %}
+
       {% if user.is_authenticated %}
       <li class="nav-item dropdown">
         <a class="nav-link" data-toggle="dropdown" href="#">
@@ -242,7 +249,7 @@
     <div class="float-right d-none d-sm-inline">
       Anything you want
     </div>
-    <strong>Copyright &copy; {% now "Y" %} <a href="#">mod64bits</a>.</strong> All rights reserved.
+    <strong>Copyright &copy; {% now "Y" %} <a href="#">Sua Empresa</a>.</strong> All rights reserved.
   </footer>
 </div>
 <div class="modal fade" id="ajaxModal" tabindex="-1" role="dialog" aria-labelledby="ajaxModalLabel" aria-hidden="true">
@@ -451,7 +458,7 @@ $(document).ready(function() {
     });
 
     $('#ajaxModal').on('shown.bs.modal', function () {
-        // A reinicialização agora é feita no momento em que o conteúdo é carregado/atualizado
+        initializeSelect2InContext(this);
     });
 });
 </script>
