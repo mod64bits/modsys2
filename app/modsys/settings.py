@@ -11,6 +11,8 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 import os
 from pathlib import Path
+from dotenv import load_dotenv
+load_dotenv()
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -22,18 +24,9 @@ print(f"debug {BASE_DIR}")
 
 # SECURITY WARNING: keep the secret key used in production secret!
 
-SECRET_KEY = os.getenv('SECRET_KEY', 'change-me')
-#SECRET_KEY = os.environ.get("SECRET_KEY")
-
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
-#DEBUG = bool(int(os.getenv('DEBUG', 1)))
-
-# ALLOWED_HOSTS = []
-ALLOWED_HOSTS = [
-    h.strip() for h in os.getenv('ALLOWED_HOSTS', '*').split(',')
-    if h.strip()
-]
+SECRET_KEY = os.environ.get('SECRET_KEY')
+DEBUG = int(os.environ.get('DEBUG', default=0))
+ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS').split(',')
 
 
 # Application definition
@@ -97,27 +90,28 @@ WSGI_APPLICATION = 'modsys.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
+
 # DATABASES = {
 #     'default': {
 #         'ENGINE': os.getenv('DB_ENGINE', 'django.db.backends.postgresql'),
-#         'NAME': os.getenv('POSTGRES_DB', 'mod_dev'),
+#         'NAME': os.getenv('POSTGRES_DB', 'modsys_dev'),
 #         'USER': os.getenv('POSTGRES_USER', 'postgres'),
 #         'PASSWORD': os.getenv('POSTGRES_PASSWORD', 'mod64'),
-#         'HOST': os.getenv('POSTGRES_HOST', '172.19.91.26'),
+#         'HOST': os.getenv('POSTGRES_HOST', '138.99.206.201'),
 #         'PORT': os.getenv('POSTGRES_PORT', '5432'),
 #     }
 # }
+
 DATABASES = {
     'default': {
-        'ENGINE': os.getenv('DB_ENGINE', 'django.db.backends.postgresql'),
-        'NAME': os.getenv('POSTGRES_DB', 'modsys_dev'),
-        'USER': os.getenv('POSTGRES_USER', 'postgres'),
-        'PASSWORD': os.getenv('POSTGRES_PASSWORD', 'mod64'),
-        'HOST': os.getenv('POSTGRES_HOST', '138.99.206.201'),
-        'PORT': os.getenv('POSTGRES_PORT', '5432'),
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': os.environ.get('DB_NAME'),
+        'USER': os.environ.get('DB_USER'),
+        'PASSWORD': os.environ.get('DB_PASSWORD'),
+        'HOST': os.environ.get('DB_HOST'),
+        'PORT': os.environ.get('DB_PORT'),
     }
 }
-
 
 # Password validation
 # https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators
@@ -158,10 +152,10 @@ STATICFILES_DIRS = [
     os.path.join(BASE_DIR, "static"),
 
 ]
-STATIC_ROOT = DATA_DIR / 'static'
 
-MEDIA_URL = 'media/'
-MEDIA_ROOT = DATA_DIR / 'media'
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+MEDIA_URL = '/media/'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'mediafiles')
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field

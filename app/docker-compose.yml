@@ -1,0 +1,29 @@
+version: '3.8'
+
+services:
+  web:
+    build: .
+    # O comando agora é gerido pelo ENTRYPOINT no Dockerfile
+    # command: gunicorn ticket_project.wsgi:application --bind 0.0.0.0:8000 (removido)
+    volumes:
+      - static_volume:/app/staticfiles
+      - media_volume:/app/mediafiles
+    expose:
+      - 8000
+    env_file:
+      - .env
+
+  nginx:
+    image: nginx:latest
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf
+      - static_volume:/app/staticfiles
+      - media_volume:/app/mediafiles
+    depends_on:
+      - web
+
+volumes:
+  static_volume:
+  media_volume:
