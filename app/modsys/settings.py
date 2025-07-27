@@ -25,8 +25,8 @@ print(f"debug {BASE_DIR}")
 # SECURITY WARNING: keep the secret key used in production secret!
 
 SECRET_KEY = os.environ.get('SECRET_KEY')
-DEBUG = int(os.environ.get('DEBUG', default=0))
-ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS').split(',')
+DEBUG = int(os.environ.get('DEBUG', default=1))
+ALLOWED_HOSTS = ['*']
 
 
 # Application definition
